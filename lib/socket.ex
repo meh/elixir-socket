@@ -48,10 +48,6 @@ defmodule Socket do
       end
     end
 
-    if options[:packet] do
-      args = [{ :packet, options[:packet] } | args]
-    end
-
     args
   end
 end

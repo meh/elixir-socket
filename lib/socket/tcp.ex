@@ -3,6 +3,7 @@ defmodule Socket.TCP do
 
   defp arguments(options) do
     args = Socket.arguments(options)
+    args = [{ :active, false } | args]
 
     args = case options[:as] || :binary do
       :list   -> [:list | args]
@@ -13,7 +14,19 @@ defmodule Socket.TCP do
       args = [{ :packet_size, options[:size] } | args]
     end
 
-    args = [{ :active, false } | args]
+    if options[:packet] do
+      args = [{ :packet, options[:packet] } | args]
+    end
+
+    if watermark = options[:watermark] do
+      if watermark[:low] do
+        args = [{ :low_watermark, watermark[:low] } | args]
+      end
+
+      if watermark[:high] do
+        args = [{ :high_watermark, watermark[:high] } | args]
+      end
+    end
 
     if local = options[:local] do
       if local[:address] do
@@ -54,9 +67,7 @@ defmodule Socket.TCP do
       address = binary_to_list(address)
     end
 
-    args = arguments(options)
-
-    case :gen_tcp.connect(address, port, args) do
+    case :gen_tcp.connect(address, port, arguments(options)) do
       { :ok, sock } ->
         reference = if options[:automatic] != false do
           :gen_tcp.controlling_process(sock, Process.whereis(Socket.Manager))

@@ -76,7 +76,8 @@ defmodule Socket.TCP do
 
         { :ok, socket(port: sock, reference: reference) }
 
-      error -> error
+      error ->
+        error
     end
   end
 
@@ -85,8 +86,8 @@ defmodule Socket.TCP do
       { :ok, socket } ->
         socket
 
-      { :error, reason } ->
-        raise Error, reason: reason
+      { :error, code } ->
+        raise Socket.Error, code: code
     end
   end
 
@@ -111,8 +112,8 @@ defmodule Socket.TCP do
       { :ok, socket } ->
         socket
 
-      { :error, reason } ->
-        raise Error, reason: reason
+      { :error, code } ->
+        raise Socket.Error, code: code
     end
   end
 
@@ -132,8 +133,8 @@ defmodule Socket.TCP do
       { :ok, socket } ->
         socket
 
-      { :error, reason } ->
-        raise Socket.Error, reason: reason
+      { :error, code } ->
+        raise Socket.Error, code: code
     end
   end
 
@@ -166,7 +167,7 @@ defmodule Socket.TCP do
   end
 
   def send(value, socket(port: port)) do
-    :gen_tcp.send(port, value)
+    :gen_tcp.send(port, to_binary(value))
   end
 
   def send!(value, self) do
@@ -174,8 +175,8 @@ defmodule Socket.TCP do
       :ok ->
         :ok
 
-      { :error, reason } ->
-        raise Socket.Error, reason: reason
+      { :error, code } ->
+        raise Socket.Error, code: code
     end
   end
 
@@ -204,8 +205,8 @@ defmodule Socket.TCP do
       { :ok, packet } ->
         packet
 
-      { :error, reason } ->
-        raise Socket.Error, reason: reason
+      { :error, code } ->
+        raise Socket.Error, code: code
     end
   end
 
@@ -214,8 +215,8 @@ defmodule Socket.TCP do
       { :ok, packet } ->
         packet
 
-      { :error, reason } ->
-        raise Socket.Error, reason: reason
+      { :error, code } ->
+        raise Socket.Error, code: code
     end
   end
 
@@ -224,8 +225,8 @@ defmodule Socket.TCP do
       { :ok, packet } ->
         packet
 
-      { :error, reason } ->
-        raise Socket.Error, reason: reason
+      { :error, code } ->
+        raise Socket.Error, code: code
     end
   end
 

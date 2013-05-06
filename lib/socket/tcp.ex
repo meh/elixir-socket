@@ -91,7 +91,19 @@ defmodule Socket.TCP do
     end
   end
 
-  def listen(port, options // []) do
+  def listen do
+    listen(0, [])
+  end
+
+  def listen(port) when is_integer(port) do
+    listen(port, [])
+  end
+
+  def listen(options) do
+    listen(0, options)
+  end
+
+  def listen(port, options) do
     args = arguments(options)
 
     case :gen_tcp.listen(port, args) do
@@ -107,7 +119,19 @@ defmodule Socket.TCP do
     end
   end
 
-  def listen!(port, options // []) do
+  def listen! do
+    listen!(0, [])
+  end
+
+  def listen!(port) when is_integer(port) do
+    listen!(port, [])
+  end
+
+  def listen!(options) do
+    listen!(0, options)
+  end
+
+  def listen!(port, options) do
     case listen(port, options) do
       { :ok, socket } ->
         socket

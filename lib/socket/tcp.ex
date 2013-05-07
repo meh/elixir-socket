@@ -71,7 +71,7 @@ defmodule Socket.TCP do
       { :ok, sock } ->
         reference = if options[:automatic] != false do
           :gen_tcp.controlling_process(sock, Process.whereis(Socket.Manager))
-          Finalizer.define({ :close, sock }, Process.whereis(Socket.Manager))
+          Finalizer.define({ :close, :tcp, sock }, Process.whereis(Socket.Manager))
         end
 
         { :ok, socket(port: sock, reference: reference) }
@@ -110,7 +110,7 @@ defmodule Socket.TCP do
       { :ok, sock } ->
         reference = if options[:automatic] != false do
           :gen_tcp.controlling_process(sock, Process.whereis(Socket.Manager))
-          Finalizer.define({ :close, sock }, Process.whereis(Socket.Manager))
+          Finalizer.define({ :close, :tcp, sock }, Process.whereis(Socket.Manager))
         end
 
         { :ok, socket(port: sock, reference: reference) }
@@ -146,7 +146,7 @@ defmodule Socket.TCP do
       { :ok, sock } ->
         { :ok, socket(port: sock, reference: if(ref, do: (
           :gen_tcp.controlling_process(sock, Process.whereis(Socket.Manager))
-          Finalizer.define({ :close, sock }, Process.whereis(Socket.Manager))))) }
+          Finalizer.define({ :close, :tcp, sock }, Process.whereis(Socket.Manager))))) }
 
       error -> error
     end

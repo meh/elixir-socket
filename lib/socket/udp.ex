@@ -61,7 +61,7 @@ defmodule Socket.UDP do
       { :ok, sock } ->
         reference = if options[:automatic] != false do
           :gen_udp.controlling_process(sock, Process.whereis(Socket.Manager))
-          Finalizer.define({ :close, sock }, Process.whereis(Socket.Manager))
+          Finalizer.define({ :close, :udp, sock }, Process.whereis(Socket.Manager))
         end
 
         { :ok, socket(port: sock, reference: reference) }

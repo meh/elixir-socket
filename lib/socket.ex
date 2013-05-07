@@ -12,6 +12,14 @@ defmodule Socket do
       args = [{ :dontroute, !options[:route] } | args]
     end
 
+    if options[:reuseaddr] do
+      args = [{ :reuseaddr, true } | args]
+    end
+
+    if options[:linger] do
+      args = [{ :linger, { true, options[:linger] } } | args]
+    end
+
     if options[:priority] do
       args = [{ :priority, options[:priority] } | args]
     end

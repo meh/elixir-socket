@@ -261,4 +261,8 @@ defmodule Socket.TCP do
   def close(socket(port: port)) do
     :gen_tcp.close(port)
   end
+
+  def to_port(socket(port: port)) do
+    port
+  end
 end

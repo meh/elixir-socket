@@ -25,4 +25,28 @@ defmodule Socket.Manager do
 
     { :noreply, _state }
   end
+
+  def handle_info({ :close, :tcp, socket }, _state) do
+    :gen_tcp.close(socket)
+
+    { :noreply, _state }
+  end
+
+  def handle_info({ :close, :udp, socket }, _state) do
+    :gen_udp.close(socket)
+
+    { :noreply, _state }
+  end
+
+  def handle_info({ :close, :sctp, socket }, _state) do
+    :gen_sctp.close(socket)
+
+    { :noreply, _state }
+  end
+
+  def handle_info({ :close, :sctp, socket, assoc }, _state) do
+    :gen_sctp.eof(socket, assoc)
+
+    { :noreply, _state }
+  end
 end

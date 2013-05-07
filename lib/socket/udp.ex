@@ -164,4 +164,8 @@ defmodule Socket.UDP do
   def close(socket(port: port)) do
     :gen_udp.close(port)
   end
+
+  def to_port(socket(port: port)) do
+    port
+  end
 end

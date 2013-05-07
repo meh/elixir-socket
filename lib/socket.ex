@@ -8,10 +8,6 @@ defmodule Socket do
   def arguments(options) do
     args = []
 
-    if Keyword.has_key?(options, :active) do
-      args = [{ :active, options[:active] } | args]
-    end
-
     if Keyword.has_key?(options, :route) do
       args = [{ :dontroute, !options[:route] } | args]
     end

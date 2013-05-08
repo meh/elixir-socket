@@ -259,7 +259,11 @@ defmodule Socket.TCP do
   end
 
   def shutdown(how, socket(port: sock)) do
-    :gen_tcp.shutdown(sock, how)
+    :gen_tcp.shutdown(sock, case how do
+      :read  -> :read
+      :write -> :write
+      :both  -> :read_write
+    end)
   end
 
   def close(socket(port: port)) do

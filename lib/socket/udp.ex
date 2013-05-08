@@ -98,7 +98,7 @@ defmodule Socket.UDP do
       address = binary_to_list(address)
     end
 
-    :gen_udp.send(port, address, port, to_binary(value))
+    :gen_udp.send(port, address, port, value)
   end
 
   def send!(address, port, value, self) do

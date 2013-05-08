@@ -195,7 +195,7 @@ defmodule Socket.TCP do
   end
 
   def send(value, socket(port: port)) do
-    :gen_tcp.send(port, to_binary(value))
+    :gen_tcp.send(port, value)
   end
 
   def send!(value, self) do

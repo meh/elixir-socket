@@ -1,66 +1,7 @@
 defmodule Socket.TCP do
+  @type t :: record
+
   defrecordp :socket, port: nil, reference: nil
-
-  defp arguments(options) do
-    args = Socket.arguments(options)
-    args = [{ :active, false } | args]
-
-    args = case options[:as] || :binary do
-      :list   -> [:list | args]
-      :binary -> [:binary | args]
-    end
-
-    if options[:size] do
-      args = [{ :packet_size, options[:size] } | args]
-    end
-
-    if options[:packet] do
-      args = [{ :packet, options[:packet] } | args]
-    end
-
-    if watermark = options[:watermark] do
-      if watermark[:low] do
-        args = [{ :low_watermark, watermark[:low] } | args]
-      end
-
-      if watermark[:high] do
-        args = [{ :high_watermark, watermark[:high] } | args]
-      end
-    end
-
-    if local = options[:local] do
-      if local[:address] do
-        args = [{ :ip, binary_to_list(local[:address]) } | args]
-      end
-
-      if local[:port] do
-        args = [{ :port, local[:port] } | args]
-      end
-
-      if local[:fd] do
-        args = [{ :fd, local[:fd] } | args]
-      end
-    end
-
-    args = case options[:version] do
-      4 -> [:inet | args]
-      6 -> [:inet6 | args]
-
-      nil -> args
-    end
-
-    if options[:options] do
-      if List.member?(options[:options], :keepalive) do
-        args = [{ :keepalive, true } | args]
-      end
-
-      if List.member?(options[:options], :nodelay) do
-        args = [{ :nodelay, true } | args]
-      end
-    end
-
-    args
-  end
 
   def connect(address, port, options // []) do
     if is_binary(address) do
@@ -272,5 +213,70 @@ defmodule Socket.TCP do
 
   def to_port(socket(port: port)) do
     port
+  end
+
+  defp arguments(options) do
+    args = Socket.arguments(options)
+    args = [{ :active, false } | args]
+
+    args = case options[:as] || :binary do
+      :list   -> [:list | args]
+      :binary -> [:binary | args]
+    end
+
+    if options[:size] do
+      args = [{ :packet_size, options[:size] } | args]
+    end
+
+    if options[:packet] do
+      args = [{ :packet, options[:packet] } | args]
+    end
+
+    if watermark = options[:watermark] do
+      if watermark[:low] do
+        args = [{ :low_watermark, watermark[:low] } | args]
+      end
+
+      if watermark[:high] do
+        args = [{ :high_watermark, watermark[:high] } | args]
+      end
+    end
+
+    if local = options[:local] do
+      if address = local[:address] do
+        if is_binary(address) do
+          address = binary_to_list(address)
+        end
+
+        args = [{ :ip, Socket.Address.parse(address) } | args]
+      end
+
+      if local[:port] do
+        args = [{ :port, local[:port] } | args]
+      end
+
+      if local[:fd] do
+        args = [{ :fd, local[:fd] } | args]
+      end
+    end
+
+    args = case options[:version] do
+      4 -> [:inet | args]
+      6 -> [:inet6 | args]
+
+      nil -> args
+    end
+
+    if options[:options] do
+      if List.member?(options[:options], :keepalive) do
+        args = [{ :keepalive, true } | args]
+      end
+
+      if List.member?(options[:options], :nodelay) do
+        args = [{ :nodelay, true } | args]
+      end
+    end
+
+    args
   end
 end

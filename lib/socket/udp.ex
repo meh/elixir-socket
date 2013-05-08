@@ -42,7 +42,7 @@ defmodule Socket.UDP do
     open!(0, options)
   end
 
-  def open!(port, options // []) do
+  def open!(port, options) do
     case open(port, options) do
       { :ok, socket } ->
         socket

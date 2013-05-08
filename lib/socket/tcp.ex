@@ -193,6 +193,28 @@ defmodule Socket.TCP do
   end
 
   @doc """
+  Set options of the socket.
+  """
+  @spec options(Keyword.t, t) :: :ok | { :error, :inet.posix }
+  def options(opts, socket(port: port)) do
+    :inet.setopts(port, arguments(opts))
+  end
+
+  @doc """
+  Set options of the socket, raising if an error occurs.
+  """
+  @spec options(Keyword.t, t) :: :ok | no_return
+  def options!(opts, self) do
+    case options(opts, self) do
+      :ok ->
+        :ok
+
+      { :error, code } ->
+        raise Socket.Error, code: code
+    end
+  end
+
+  @doc """
   Return the local address and port.
   """
   @spec local(t) :: { :ok, { :inet.ip_address, :inet.port_number } } | { :error, :inet.posix }

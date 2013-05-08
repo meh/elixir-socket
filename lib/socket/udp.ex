@@ -52,6 +52,20 @@ defmodule Socket.UDP do
     end
   end
 
+  def options(opts, socket(port: port)) do
+    :inet.setopts(port, arguments(opts))
+  end
+
+  def options!(opts, self) do
+    case options(opts, self) do
+      :ok ->
+        :ok
+
+      { :error, code } ->
+        raise Socket.Error, code: code
+    end
+  end
+
   def send(address, port, value, socket(port: port)) do
     if is_binary(address) do
       address = binary_to_list(address)

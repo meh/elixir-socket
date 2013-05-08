@@ -5,6 +5,7 @@ defmodule Socket do
     end
   end
 
+  @doc false
   def arguments(options) do
     args = []
 

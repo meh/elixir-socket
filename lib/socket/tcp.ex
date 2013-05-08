@@ -144,11 +144,15 @@ defmodule Socket.TCP do
   def accept(timeout // :infinity, socket(port: sock, reference: ref)) do
     case :gen_tcp.accept(sock, timeout) do
       { :ok, sock } ->
-        { :ok, socket(port: sock, reference: if(ref, do: (
+        reference = if ref do
           :gen_tcp.controlling_process(sock, Process.whereis(Socket.Manager))
-          Finalizer.define({ :close, :tcp, sock }, Process.whereis(Socket.Manager))))) }
+          Finalizer.define({ :close, :tcp, sock }, Process.whereis(Socket.Manager))
+        end
 
-      error -> error
+        { :ok, socket(port: sock, reference: reference) }
+
+      error ->
+        error
     end
   end
 

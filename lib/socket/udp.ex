@@ -1,48 +1,7 @@
 defmodule Socket.UDP do
+  @type t :: record
+
   defrecordp :socket, port: nil, reference: nil
-
-  defp arguments(options) do
-    args = Socket.arguments(options)
-    args = [{ :active, false } | args]
-
-    args = case options[:as] || :binary do
-      :list   -> [:list | args]
-      :binary -> [:binary | args]
-    end
-
-    if local = options[:local] do
-      if local[:address] do
-        args = [{ :ip, binary_to_list(local[:address]) } | args]
-      end
-
-      if local[:fd] do
-        args = [{ :fd, local[:fd] } | args]
-      end
-    end
-
-    args = case options[:version] do
-      4 -> [:inet | args]
-      6 -> [:inet6 | args]
-
-      nil -> args
-    end
-
-    if Keyword.has_key?(options, :broadcast) do
-      args = [{ :broadcast, options[:broadcast] } | args]
-    end
-
-    if options[:options] do
-      if List.member?(options[:options], :keepalive) do
-        args = [{ :keepalive, true } | args]
-      end
-
-      if List.member?(options[:options], :nodelay) do
-        args = [{ :nodelay, true } | args]
-      end
-    end
-
-    args
-  end
 
   def open do
     open(0, [])
@@ -161,11 +120,60 @@ defmodule Socket.UDP do
     end
   end
 
+  @spec close(t) :: :ok
   def close(socket(port: port)) do
     :gen_udp.close(port)
   end
 
+  @spec to_port(t) :: port
   def to_port(socket(port: port)) do
     port
+  end
+
+  defp arguments(options) do
+    args = Socket.arguments(options)
+    args = [{ :active, false } | args]
+
+    args = case options[:as] || :binary do
+      :list   -> [:list | args]
+      :binary -> [:binary | args]
+    end
+
+    if local = options[:local] do
+      if address = local[:address] do
+        if is_binary(address) do
+          address = binary_to_list(address)
+        end
+
+        args = [{ :ip, Socket.Address.parse(address) } | args]
+      end
+
+      if local[:fd] do
+        args = [{ :fd, local[:fd] } | args]
+      end
+    end
+
+    args = case options[:version] do
+      4 -> [:inet | args]
+      6 -> [:inet6 | args]
+
+      nil -> args
+    end
+
+    if Keyword.has_key?(options, :broadcast) do
+      args = [{ :broadcast, options[:broadcast] } | args]
+    end
+
+    if options[:options] do
+      if List.member?(options[:options], :keepalive) do
+        args = [{ :keepalive, true } | args]
+      end
+
+      if List.member?(options[:options], :nodelay) do
+        args = [{ :nodelay, true } | args]
+      end
+    end
+
+    args
   end
 end

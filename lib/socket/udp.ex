@@ -128,11 +128,7 @@ defmodule Socket.UDP do
 
   @spec recv(non_neg_integer, Keyword.t, t) :: { :ok, { :inet.ip_address, :inet.port_number, iodata } } | { :error, :inet.posix }
   def recv(length, options, socket(port: port)) do
-    if timeout = options[:timeout] do
-      :gen_udp.recv(port, length, timeout)
-    else
-      :gen_udp.recv(port, length)
-    end
+    :gen_udp.recv(port, length, options[:timeout] || :infinity)
   end
 
   @spec recv!(t) :: { :inet.ip_address, :inet.port_number, iodata } | no_return

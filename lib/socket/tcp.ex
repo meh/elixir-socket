@@ -164,12 +164,12 @@ defmodule Socket.TCP do
   end
 
   @doc """
-  Accept a new client from a listening socket, optionally passing a timeout.
+  Accept a new client from a listening socket, optionally passing options.
   """
-  @spec accept(t)          :: { :ok, t } | { :error, :inet.posix }
-  @spec accept(timeout, t) :: { :ok, t } | { :error, :inet.posix }
-  def accept(timeout // :infinity, socket(port: sock, reference: ref)) do
-    case :gen_tcp.accept(sock, timeout) do
+  @spec accept(t)            :: { :ok, t } | { :error, :inet.posix }
+  @spec accept(Keyword.t, t) :: { :ok, t } | { :error, :inet.posix }
+  def accept(options // [], socket(port: sock, reference: ref)) do
+    case :gen_tcp.accept(sock, options[:timeout] || :infinity) do
       { :ok, sock } ->
         reference = if ref do
           :gen_tcp.controlling_process(sock, Process.whereis(Socket.Manager))
@@ -184,13 +184,13 @@ defmodule Socket.TCP do
   end
 
   @doc """
-  Accept a new client from a listening socket, optionally passing a timeout,
+  Accept a new client from a listening socket, optionally passing options,
   raising if an error occurs.
   """
-  @spec accept!(t)          :: t | no_return
-  @spec accept!(timeout, t) :: t | no_return
-  def accept!(timeout // :infinity, self) do
-    case accept(timeout, self) do
+  @spec accept!(t)            :: t | no_return
+  @spec accept!(Keyword.t, t) :: t | no_return
+  def accept!(options // [], self) do
+    case accept(options, self) do
       { :ok, socket } ->
         socket
 

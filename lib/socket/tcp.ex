@@ -379,6 +379,20 @@ defmodule Socket.TCP do
   end
 
   @doc """
+  Shutdown the socket for the given mode, raising if an error occurs.
+  """
+  @spec shutdown!(:read | :write | :both, t) :: :ok | no_return
+  def shutdown!(how, self) do
+    case shutdown(how, self) do
+      :ok ->
+        :ok
+
+      { :error, code } ->
+        raise Socket.Error, code: code
+    end
+  end
+
+  @doc """
   Close the socket, if smart garbage collection is used, the socket will be
   closed automatically when it's not referenced by anything.
   """

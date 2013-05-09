@@ -47,7 +47,7 @@ defmodule Socket.TCP do
       address = binary_to_list(address)
     end
 
-    case :gen_tcp.connect(address, port, arguments(options)) do
+    case :gen_tcp.connect(address, port, arguments(options), options[:timeout] || :infinity) do
       { :ok, sock } ->
         reference = if options[:automatic] != false do
           :gen_tcp.controlling_process(sock, Process.whereis(Socket.Manager))

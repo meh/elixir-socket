@@ -1,12 +1,26 @@
+#            DO WHAT THE FUCK YOU WANT TO PUBLIC LICENSE
+#                    Version 2, December 2004
+#
+#            DO WHAT THE FUCK YOU WANT TO PUBLIC LICENSE
+#   TERMS AND CONDITIONS FOR COPYING, DISTRIBUTION AND MODIFICATION
+#
+#  0. You just DO WHAT THE FUCK YOU WANT TO.
+
 defmodule Socket.UDP do
   @type t :: record
 
   defrecordp :socket, port: nil, reference: nil
 
+  @doc """
+  Create a UDP socket listening on an OS chosen port, use `local` to know the
+  port it was bound on.
+  """
+  @spec open :: { :ok, t } | { :error, :inet.posix }
   def open do
     open(0, [])
   end
 
+  @spec open(:inet.port_number | Keyword.t) :: { :ok, t } | { :error, :inet.posix }
   def open(port) when is_integer(port) do
     open(port, [])
   end
@@ -15,6 +29,7 @@ defmodule Socket.UDP do
     open(0, options)
   end
 
+  @spec open(:inet.port_number, Keyword.t) :: { :ok, t } | { :error, :inet.posix }
   def open(port, options) do
     case :gen_udp.open(port, arguments(options)) do
       { :ok, sock } ->
@@ -30,10 +45,12 @@ defmodule Socket.UDP do
     end
   end
 
+  @spec open! :: t | no_return
   def open! do
     open!(0, [])
   end
 
+  @spec open!(:inet.port_number | Keyword.t) :: t | no_return
   def open!(port) when is_integer(port) do
     open!(port, [])
   end
@@ -42,6 +59,7 @@ defmodule Socket.UDP do
     open!(0, options)
   end
 
+  @spec open!(:ient.port_number, Keyword.t) :: t | no_return
   def open!(port, options) do
     case open(port, options) do
       { :ok, socket } ->
@@ -52,10 +70,18 @@ defmodule Socket.UDP do
     end
   end
 
+  @doc """
+  Set options of the socket.
+  """
+  @spec options(Keyword.t, t) :: :ok | { :error, :inet.posix }
   def options(opts, socket(port: port)) do
     :inet.setopts(port, arguments(opts))
   end
 
+  @doc """
+  Set options of the socket, raising if an error occurs.
+  """
+  @spec options(Keyword.t, t) :: :ok | no_return
   def options!(opts, self) do
     case options(opts, self) do
       :ok ->
@@ -66,6 +92,7 @@ defmodule Socket.UDP do
     end
   end
 
+  @spec send(String.t | :inet.ip_address, :inet.port_number, iodata, t) :: :ok | { :error, :inet.posix }
   def send(address, port, value, socket(port: port)) do
     if is_binary(address) do
       address = binary_to_list(address)
@@ -74,6 +101,7 @@ defmodule Socket.UDP do
     :gen_udp.send(port, address, port, value)
   end
 
+  @spec send(String.t | :inet.ip_address, :inet.port_number, iodata, t) :: :ok | no_return
   def send!(address, port, value, self) do
     case send(address, port, value, self) do
       :ok ->
@@ -84,10 +112,12 @@ defmodule Socket.UDP do
     end
   end
 
+  @spec recv(t) :: { :ok, { :inet.ip_address, :inet.port_number, iodata } } | { :error, :inet.posix }
   def recv(socket(port: port)) do
     :gen_udp.recv(port, 512)
   end
 
+  @spec recv(non_neg_integer | Keyword.t, t) :: { :ok, { :inet.ip_address, :inet.port_number, iodata } } | { :error, :inet.posix }
   def recv(length, socket(port: port)) when is_integer(length) do
     :gen_udp.recv(port, length)
   end
@@ -96,6 +126,7 @@ defmodule Socket.UDP do
     recv(512, options, self)
   end
 
+  @spec recv(non_neg_integer, Keyword.t, t) :: { :ok, { :inet.ip_address, :inet.port_number, iodata } } | { :error, :inet.posix }
   def recv(length, options, socket(port: port)) do
     if timeout = options[:timeout] do
       :gen_udp.recv(port, length, timeout)
@@ -104,6 +135,7 @@ defmodule Socket.UDP do
     end
   end
 
+  @spec recv!(t) :: { :inet.ip_address, :inet.port_number, iodata } | no_return
   def recv!(self) do
     case recv(self) do
       { :ok, packet } ->
@@ -114,6 +146,7 @@ defmodule Socket.UDP do
     end
   end
 
+  @spec recv!(non_neg_integer | Keyword.t, t) :: { :inet.ip_address, :inet.port_number, iodata } | no_return
   def recv!(length_or_options, self) do
     case recv(length_or_options, self) do
       { :ok, packet } ->
@@ -124,6 +157,7 @@ defmodule Socket.UDP do
     end
   end
 
+  @spec recv!(non_neg_integer, Keyword.t, t) :: { :inet.ip_address, :inet.port_number, iodata } | no_return
   def recv!(length, options, self) do
     case recv(length, options, self) do
       { :ok, packet } ->

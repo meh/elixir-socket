@@ -112,9 +112,7 @@ defmodule Socket.TCP do
   """
   @spec listen(:inet.port_number, Keyword.t) :: { :ok, t } | { :error, :inet.posix }
   def listen(port, options) do
-    args = arguments(options)
-
-    case :gen_tcp.listen(port, args) do
+    case :gen_tcp.listen(port, arguments(options)) do
       { :ok, sock } ->
         reference = if options[:automatic] != false do
           :gen_tcp.controlling_process(sock, Process.whereis(Socket.Manager))
@@ -123,7 +121,8 @@ defmodule Socket.TCP do
 
         { :ok, socket(port: sock, reference: reference) }
 
-      error -> error
+      error ->
+        error
     end
   end
 

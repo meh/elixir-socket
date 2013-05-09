@@ -409,7 +409,11 @@ defmodule Socket.TCP do
     port
   end
 
-  defp arguments(options) do
+  @doc """
+  Convert TCP options to `:inet.setopts` compatible arguments.
+  """
+  @spec arguments(Keyword.t) :: list
+  def arguments(options) do
     args = Socket.arguments(options)
     args = [{ :active, false } | args]
 

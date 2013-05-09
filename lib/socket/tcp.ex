@@ -210,7 +210,7 @@ defmodule Socket.TCP do
   @doc """
   Set options of the socket, raising if an error occurs.
   """
-  @spec options(Keyword.t, t) :: :ok | no_return
+  @spec options!(Keyword.t, t) :: :ok | no_return
   def options!(opts, self) do
     case options(opts, self) do
       :ok ->

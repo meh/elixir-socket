@@ -178,7 +178,11 @@ defmodule Socket.UDP do
     port
   end
 
-  defp arguments(options) do
+  @doc """
+  Convert UDP options to `:inet.setopts` compatible arguments.
+  """
+  @spec arguments(Keyword.t) :: list
+  def arguments(options) do
     args = Socket.arguments(options)
     args = [{ :active, false } | args]
 

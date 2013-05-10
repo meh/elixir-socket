@@ -46,11 +46,32 @@ defmodule Socket.TCP do
   defrecordp :socket, port: nil, reference: nil
 
   @doc """
+  Create a TCP socket connecting to the given host and port tuple.
+  """
+  @spec connect({ Socket.Address.t, :inet.port_number }) :: { :ok, t } | { :error, :inet.posix }
+  def connect({ address, port }) do
+    connect(address, port)
+  end
+
+  @doc """
+  Create a TCP socket connecting to the given host and port tuple and options,
+  or to the given host and port.
+  """
+  @spec connect({ Socket.Address.t, :inet.port_number } | Socket.Address.t, Keyword.t | :inet.port_number) :: { :ok, t } | { :error, :inet.posix }
+  def connect({ address, port }, options) when is_list(options) do
+    connect(address, port, options)
+  end
+
+  def connect(address, port) when is_integer(port) do
+    connect(address, port, [])
+  end
+
+  @doc """
   Create a TCP socket connecting to the given host and port.
   """
   @spec connect(String.t | :inet.ip_address, :inet.port_number)            :: { :ok, t } | { :error, :inet.posix }
   @spec connect(String.t | :inet.ip_address, :inet.port_number, Keyword.t) :: { :ok, t } | { :error, :inet.posix }
-  def connect(address, port, options // []) do
+  def connect(address, port, options) do
     if is_binary(address) do
       address = binary_to_list(address)
     end
@@ -70,12 +91,34 @@ defmodule Socket.TCP do
   end
 
   @doc """
+  Create a TCP socket connecting to the given host and port tuple, raising if
+  an error occurs.
+  """
+  @spec connect!({ Socket.Address.t, :inet.port_number }) :: t | no_return
+  def connect!({ address, port }) do
+    connect!(address, port)
+  end
+
+  @doc """
+  Create a TCP socket connecting to the given host and port tuple and options,
+  or to the given host and port, raising if an error occurs.
+  """
+  @spec connect!({ Socket.Address.t, :inet.port_number } | Socket.Address.t, Keyword.t | :inet.port_number) :: t | no_return
+  def connect!({ address, port }, options) when is_list(options) do
+    connect!(address, port, options)
+  end
+
+  def connect!(address, port) when is_integer(port) do
+    connect!(address, port, [])
+  end
+
+  @doc """
   Create a TCP socket connecting to the given host and port, raising in case of
   error.
   """
   @spec connect!(String.t | :inet.ip_address, :inet.port_number)            :: t | no_return
   @spec connect!(String.t | :inet.ip_address, :inet.port_number, Keyword.t) :: t | no_return
-  def connect!(address, port, options // []) do
+  def connect!(address, port, options) do
     case connect(address, port, options) do
       { :ok, socket } ->
         socket

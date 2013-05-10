@@ -7,7 +7,9 @@
 #  0. You just DO WHAT THE FUCK YOU WANT TO.
 
 defmodule Socket.Address do
-  def parse(text) when is_binary text do
+  @type t :: String.t | char_list | :inet.ip_address
+
+  def parse(text) when is_binary(text) do
     parse(binary_to_list(text))
   end
 

@@ -56,4 +56,13 @@ defmodule TcpTest do
     { :ok, client } = server.accept(timeout: 5000)
     assert is_record(client, Socket.TCP)
   end
+
+  test :send do
+    server  = Socket.TCP.listen!
+    client  = Socket.TCP.connect! server.local!
+    client2 = server.accept!
+
+    assert client.send("lol") == :ok
+    assert client2.recv!(3) == "lol"
+  end
 end

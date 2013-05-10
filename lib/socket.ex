@@ -13,6 +13,8 @@ defmodule Socket do
     end
   end
 
+  @type t :: port | record
+
   @doc false
   def arguments(options) do
     args = []

@@ -45,7 +45,7 @@ defmodule TcpTest do
 
   test :accept do
     server = Socket.TCP.listen!
-    assert server.accept(1000) == { :error, :timeout }
+    assert server.accept(timeout: 1000) == { :error, :timeout }
 
     Process.spawn fn ->
       { _, port } = server.local!
@@ -53,7 +53,7 @@ defmodule TcpTest do
       Socket.TCP.connect(Socket.Host.name, port)
     end
 
-    { :ok, client } = server.accept(5000)
+    { :ok, client } = server.accept(timeout: 5000)
     assert is_record(client, Socket.TCP)
   end
 end

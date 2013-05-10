@@ -35,7 +35,7 @@ defmodule Socket.TCP do
 
       server = Socket.TCP.listen!(1337, packet: :line)
 
-      client = s.accept!
+      client = server.accept!
       client.send!(client.recv!)
       client.close
 

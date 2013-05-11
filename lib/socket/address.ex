@@ -13,7 +13,7 @@ defmodule Socket.Address do
     parse(binary_to_list(text))
   end
 
-  def parse(text) do
+  def parse(text) when is_list(text) do
     case :inet.parse_address(text) do
       { :ok, ip } ->
         ip
@@ -21,5 +21,9 @@ defmodule Socket.Address do
       { :error, :einval } ->
         nil
     end
+  end
+
+  def parse(address) do
+    address
   end
 end

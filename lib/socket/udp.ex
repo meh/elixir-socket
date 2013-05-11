@@ -212,14 +212,22 @@ defmodule Socket.UDP do
       args = [{ :broadcast, options[:broadcast] } | args]
     end
 
-    if options[:options] do
-      if List.member?(options[:options], :keepalive) do
-        args = [{ :keepalive, true } | args]
+    if multicast = options[:multicast] do
+      if multicast[:address] do
+        args = [{ :multicast_if, multicast[:address] } | args]
       end
 
-      if List.member?(options[:options], :nodelay) do
-        args = [{ :nodelay, true } | args]
+      if multicast[:loop] do
+        args = [{ :multicast_loop, multicast[:loop] } | args]
       end
+
+      if multicast[:ttl] do
+        args = [{ :multicast_ttl, multicast[:ttl] } | args]
+      end
+    end
+
+    if options[:membership] do
+      args = [{ :add_membership, options[:membership] } | args]
     end
 
     args

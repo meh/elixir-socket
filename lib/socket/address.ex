@@ -26,4 +26,18 @@ defmodule Socket.Address do
   def parse(address) do
     address
   end
+
+  def for(host, family) do
+    :inet.getaddrs(parse(host), family)
+  end
+
+  def for!(host, family) do
+    case :inet.getaddrs(parse(host), family) do
+      { :ok, addresses } ->
+        addresses
+
+      { :error, code } ->
+        raise PosixError, code: code
+    end
+  end
 end

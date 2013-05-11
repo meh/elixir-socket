@@ -7,20 +7,6 @@
 #  0. You just DO WHAT THE FUCK YOU WANT TO.
 
 defrecord Socket.Host, [:name, :aliases, :type, :length, :list] do
-  def for(host, family) do
-    :inet.getaddrs(Socket.Address.parse(host), family)
-  end
-
-  def for!(host, family) do
-    case :inet.getaddrs(Socket.Address.parse(host), family) do
-      { :ok, addresses } ->
-        addresses
-
-      { :error, code } ->
-        raise PosixError, code: code
-    end
-  end
-
   def by_address(address) do
     case :inet.gethostbyaddr(Socket.Address.parse(address)) do
       { :ok, host } ->

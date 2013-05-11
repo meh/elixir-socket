@@ -19,6 +19,14 @@ defmodule Socket do
   def arguments(options) do
     args = []
 
+    args = case options[:mode] || :passive do
+      :active ->
+        [{ :active, true } | args]
+
+      :passive ->
+        [{ :active, false } | args]
+    end
+
     if Keyword.has_key?(options, :route) do
       args = [{ :dontroute, !options[:route] } | args]
     end

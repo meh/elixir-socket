@@ -78,7 +78,7 @@ defmodule Socket.TCP do
 
     case :gen_tcp.connect(address, port, arguments(options), options[:timeout] || :infinity) do
       { :ok, sock } ->
-        reference = if options[:automatic] != false do
+        reference = if options[:mode] == :passive do
           :gen_tcp.controlling_process(sock, Process.whereis(Socket.Manager))
           Finalizer.define({ :close, :tcp, sock }, Process.whereis(Socket.Manager))
         end
@@ -458,7 +458,6 @@ defmodule Socket.TCP do
   @spec arguments(Keyword.t) :: list
   def arguments(options) do
     args = Socket.arguments(options)
-    args = [{ :active, false } | args]
 
     args = case options[:as] || :binary do
       :list   -> [:list | args]

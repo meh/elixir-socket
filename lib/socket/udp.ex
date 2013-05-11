@@ -296,7 +296,6 @@ defmodule Socket.UDP do
   @spec arguments(Keyword.t) :: list
   def arguments(options) do
     args = Socket.arguments(options)
-    args = [{ :active, false } | args]
 
     args = case options[:as] || :binary do
       :list   -> [:list | args]

@@ -8,11 +8,11 @@
 
 defrecord Socket.Host, [:name, :aliases, :type, :length, :list] do
   def for(host, family) do
-    :inet.getaddrs(host, family)
+    :inet.getaddrs(Socket.Address.parse(host), family)
   end
 
   def for!(host, family) do
-    case :inet.getaddrs(host, family) do
+    case :inet.getaddrs(Socket.Address.parse(host), family) do
       { :ok, addresses } ->
         addresses
 
@@ -22,7 +22,7 @@ defrecord Socket.Host, [:name, :aliases, :type, :length, :list] do
   end
 
   def by_address(address) do
-    case :inet.gethostbyaddr(address) do
+    case :inet.gethostbyaddr(Socket.Address.parse(address)) do
       { :ok, host } ->
         { :ok, set_elem host, 0, Socket.Host }
 
@@ -32,7 +32,7 @@ defrecord Socket.Host, [:name, :aliases, :type, :length, :list] do
   end
 
   def by_address!(address) do
-    case :inet.gethostbyaddr(address) do
+    case :inet.gethostbyaddr(Socket.Address.parse(address)) do
       { :ok, host } ->
         set_elem host, 0, Socket.Host
 
@@ -42,6 +42,10 @@ defrecord Socket.Host, [:name, :aliases, :type, :length, :list] do
   end
 
   def by_name(name) do
+    if is_binary(name) do
+      name = binary_to_list(name)
+    end
+
     case :inet.gethostbyname(name) do
       { :ok, host } ->
         { :ok, set_elem host, 0, Socket.Host }
@@ -52,6 +56,10 @@ defrecord Socket.Host, [:name, :aliases, :type, :length, :list] do
   end
 
   def by_name(name, family) do
+    if is_binary(name) do
+      name = binary_to_list(name)
+    end
+
     case :inet.gethostbyname(name, family) do
       { :ok, host } ->
         { :ok, set_elem host, 0, Socket.Host }
@@ -62,6 +70,10 @@ defrecord Socket.Host, [:name, :aliases, :type, :length, :list] do
   end
 
   def by_name!(name) do
+    if is_binary(name) do
+      name = binary_to_list(name)
+    end
+
     case :inet.gethostbyname(name) do
       { :ok, host } ->
         set_elem host, 0, Socket.Host
@@ -72,6 +84,10 @@ defrecord Socket.Host, [:name, :aliases, :type, :length, :list] do
   end
 
   def by_name!(name, family) do
+    if is_binary(name) do
+      name = binary_to_list(name)
+    end
+
     case :inet.gethostbyname(name, family) do
       { :ok, host } ->
         set_elem host, 0, Socket.Host
@@ -84,7 +100,7 @@ defrecord Socket.Host, [:name, :aliases, :type, :length, :list] do
   def name do
     case :inet.gethostname do
       { :ok, name } ->
-        name
+        :unicode.characters_to_list(name)
     end
   end
 

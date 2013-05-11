@@ -125,6 +125,34 @@ defmodule Socket.UDP do
   end
 
   @doc """
+  Set the process which will receive the messages.
+  """
+  @spec process(pid, t) :: :ok | { :error, :closed | :not_owner | :inet.posix }
+  def process(pid, socket(port: port)) do
+    :gen_udp.controlling_process(port, pid)
+  end
+
+  @doc """
+  Set the process which will receive the messages, raising if an error occurs.
+  """
+  @spec process!(pid, t) :: :ok | no_return
+  def process!(pid, socket(port: port)) do
+    case :gen_udp.controlling_process(port, pid) do
+      :ok ->
+        :ok
+
+      :closed ->
+        raise RuntimeError, message: "the socket is closed"
+
+      :not_owner ->
+        raise RuntimeError, message: "the current process isn't the owner"
+
+      code ->
+        raise Socket.Error, code: code
+    end
+  end
+
+  @doc """
   Set options of the socket.
   """
   @spec options(Keyword.t, t) :: :ok | { :error, :inet.posix }

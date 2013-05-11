@@ -472,6 +472,10 @@ defmodule Socket.TCP do
       args = [{ :packet, options[:packet] } | args]
     end
 
+    if options[:backlog] do
+      args = [{ :backlog, options[:backlog] } | args]
+    end
+
     if watermark = options[:watermark] do
       if watermark[:low] do
         args = [{ :low_watermark, watermark[:low] } | args]

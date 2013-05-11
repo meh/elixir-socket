@@ -15,11 +15,15 @@ defmodule Socket.TCP do
   When creating a socket you can pass a serie of options to use for it.
 
   * `:as` sets the kind of value returned by recv, either `:binary` or `:list`,
-    the default is `:binary`.
+    the default is `:binary`
+  * `:mode` can be either `:passive` or `:active`, default is `:passive`
+  * `:automatic` tells it whether to use smart garbage collection or not, when
+    passive the default is `true`, when active the default is `false`
   * `:local` must be a keyword list
     - `:address` the local address to use
     - `:port` the local port to use
     - `:fd` an already opened file descriptor to use
+  * `:backlog` sets the listen backlog
   * `:watermark` must be a keyword list
     - `:low` defines the `:low_watermark`, see `inet:setopts`
     - `:high` defines the `:high_watermark`, see `inet:setopts`

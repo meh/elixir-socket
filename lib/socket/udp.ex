@@ -8,8 +8,7 @@
 
 defmodule Socket.UDP do
   @moduledoc """
-  This module wraps a passive UDP socket using `gen_udp`, if you want active
-  sockets, use `gen_udp` by hand.
+  This module wraps a UDP socket using `gen_udp`.
 
   ## Options
 
@@ -17,6 +16,9 @@ defmodule Socket.UDP do
 
   * `:as` sets the kind of value returned by recv, either `:binary` or `:list`,
     the default is `:binary`.
+  * `:mode` can be either `:passive` or `:active`, default is `:passive`
+  * `:automatic` tells it whether to use smart garbage collection or not, when
+    passive the default is `true`, when active the default is `false`
   * `:local` must be a keyword list
     - `:address` the local address to use
     - `:fd` an already opened file descriptor to use
@@ -35,6 +37,14 @@ defmodule Socket.UDP do
   @type t :: record
 
   defrecordp :socket, port: nil, reference: nil
+
+  @doc """
+  Wrap an existing socket.
+  """
+  @spec wrap(port) :: t
+  def wrap(port) do
+    socket(port: port)
+  end
 
   @doc """
   Create a UDP socket listening on an OS chosen port, use `local` to know the
@@ -64,7 +74,8 @@ defmodule Socket.UDP do
   def open(port, options) do
     case :gen_udp.open(port, arguments(options)) do
       { :ok, sock } ->
-        reference = if options[:automatic] != false do
+        reference = if (options[:mode] == :passive and options[:automatic] != false) or
+                       (options[:mode] == :active  and options[:automatic] == true) do
           :gen_udp.controlling_process(sock, Process.whereis(Socket.Manager))
           Finalizer.define({ :close, :udp, sock }, Process.whereis(Socket.Manager))
         end

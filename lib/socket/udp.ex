@@ -93,12 +93,12 @@ defmodule Socket.UDP do
   end
 
   @spec send(String.t | :inet.ip_address, :inet.port_number, iodata, t) :: :ok | { :error, :inet.posix }
-  def send(address, port, value, socket(port: port)) do
+  def send(address, port, value, socket(port: sock)) do
     if is_binary(address) do
       address = binary_to_list(address)
     end
 
-    :gen_udp.send(port, address, port, value)
+    :gen_udp.send(sock, address, port, value)
   end
 
   @spec send(String.t | :inet.ip_address, :inet.port_number, iodata, t) :: :ok | no_return
@@ -112,23 +112,47 @@ defmodule Socket.UDP do
     end
   end
 
+  defmodule Association do
+    @type t :: record
+
+    defrecordp :association, socket: nil, address: nil, port: nil
+
+    def new(socket, address, port) do
+      association(socket: socket, address: address, port: port)
+    end
+
+    def send(value, association(socket: socket, address: address, port: port)) do
+      socket.send(address, port, value)
+    end
+
+    def send!(value, association(socket: socket, address: address, port: port)) do
+      socket.send!(address, port, value)
+    end
+  end
+
   @spec recv(t) :: { :ok, { :inet.ip_address, :inet.port_number, iodata } } | { :error, :inet.posix }
-  def recv(socket(port: port)) do
-    :gen_udp.recv(port, 512)
+  def recv(self) do
+    recv(512, self)
   end
 
   @spec recv(non_neg_integer | Keyword.t, t) :: { :ok, { :inet.ip_address, :inet.port_number, iodata } } | { :error, :inet.posix }
-  def recv(length, socket(port: port)) when is_integer(length) do
-    :gen_udp.recv(port, length)
+  def recv(length, self) when is_integer(length) do
+    recv(length, [], self)
   end
 
   def recv(options, self) do
     recv(512, options, self)
   end
 
-  @spec recv(non_neg_integer, Keyword.t, t) :: { :ok, { :inet.ip_address, :inet.port_number, iodata } } | { :error, :inet.posix }
-  def recv(length, options, socket(port: port)) do
-    :gen_udp.recv(port, length, options[:timeout] || :infinity)
+  @spec recv(non_neg_integer, Keyword.t, t) :: { :ok, { iodata, Association.t } } | { :error, :inet.posix }
+  def recv(length, options, socket(port: port) = self) do
+    case :gen_udp.recv(port, length, options[:timeout] || :infinity) do
+      { :ok, { address, port, data } } ->
+        { :ok, { data, Association.new(self, address, port) } }
+
+      error ->
+        error
+    end
   end
 
   @spec recv!(t) :: { :inet.ip_address, :inet.port_number, iodata } | no_return

@@ -57,4 +57,10 @@ defmodule Socket.Manager do
 
     { :noreply, _state }
   end
+
+  def handle_info({ :close, :ssl, socket }, _state) do
+    :ssl.close(socket)
+
+    { :noreply, _state }
+  end
 end

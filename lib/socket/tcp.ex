@@ -295,7 +295,6 @@ defmodule Socket.TCP do
     end
   end
 
-
   @doc """
   Set options of the socket.
   """

@@ -9,6 +9,10 @@
 defmodule Socket.Address do
   @type t :: String.t | char_list | :inet.ip_address
 
+  @doc """
+  Parse a string to an ip address tuple.
+  """
+  @spec parse(t) :: :inet.ip_address
   def parse(text) when is_binary(text) do
     parse(binary_to_list(text))
   end
@@ -27,10 +31,18 @@ defmodule Socket.Address do
     address
   end
 
+  @doc """
+  Get the addresses for the given host.
+  """
+  @spec for(t, :inet.address_family) :: { :ok, [t] } | { :error, :inet.posix }
   def for(host, family) do
     :inet.getaddrs(parse(host), family)
   end
 
+  @doc """
+  Get the addresses for the given host, raising if an error occurs.
+  """
+  @spec for!(t, :inet.address_family) :: [t] | no_return
   def for!(host, family) do
     case :inet.getaddrs(parse(host), family) do
       { :ok, addresses } ->

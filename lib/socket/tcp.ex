@@ -8,8 +8,7 @@
 
 defmodule Socket.TCP do
   @moduledoc """
-  This module wraps a passive TCP socket using `gen_tcp`, if you want active
-  sockets, use `gen_tcp` by hand.
+  This module wraps a passive TCP socket using `gen_tcp`.
 
   ## Options
 
@@ -46,6 +45,14 @@ defmodule Socket.TCP do
   defrecordp :socket, port: nil, reference: nil
 
   @doc """
+  Wrap an existing socket.
+  """
+  @spec wrap(port) :: t
+  def wrap(port) do
+    socket(port: port)
+  end
+
+  @doc """
   Create a TCP socket connecting to the given host and port tuple.
   """
   @spec connect({ Socket.Address.t, :inet.port_number }) :: { :ok, t } | { :error, :inet.posix }
@@ -78,7 +85,8 @@ defmodule Socket.TCP do
 
     case :gen_tcp.connect(address, port, arguments(options), options[:timeout] || :infinity) do
       { :ok, sock } ->
-        reference = if options[:mode] == :passive do
+        reference = if (options[:mode] == :passive and options[:automatic] != false) or
+                       (options[:mode] == :active  and options[:automatic] == true) do
           :gen_tcp.controlling_process(sock, Process.whereis(Socket.Manager))
           Finalizer.define({ :close, :tcp, sock }, Process.whereis(Socket.Manager))
         end
@@ -155,6 +163,8 @@ defmodule Socket.TCP do
   """
   @spec listen(:inet.port_number, Keyword.t) :: { :ok, t } | { :error, :inet.posix }
   def listen(port, options) do
+    options = Keyword.put(options, :mode, :passive)
+
     case :gen_tcp.listen(port, arguments(options)) do
       { :ok, sock } ->
         reference = if options[:automatic] != false do
@@ -211,15 +221,26 @@ defmodule Socket.TCP do
   """
   @spec accept(t)            :: { :ok, t } | { :error, :inet.posix }
   @spec accept(Keyword.t, t) :: { :ok, t } | { :error, :inet.posix }
-  def accept(options // [], socket(port: sock, reference: ref)) do
+  def accept(options // [], socket(port: sock)) do
     case :gen_tcp.accept(sock, options[:timeout] || :infinity) do
       { :ok, sock } ->
-        reference = if ref do
+        reference = if (options[:mode] == :passive and options[:automatic] != false) or
+                       (options[:mode] == :active  and options[:automatic] == true) do
           :gen_tcp.controlling_process(sock, Process.whereis(Socket.Manager))
           Finalizer.define({ :close, :tcp, sock }, Process.whereis(Socket.Manager))
         end
 
-        { :ok, socket(port: sock, reference: reference) }
+        result = if options[:mode] == :active do
+          :inet.setopts(sock, [{ :active, true }])
+        else
+          :ok
+        end
+
+        if result == :ok do
+          { :ok, socket(port: sock, reference: reference) }
+        else
+          result
+        end
 
       error ->
         error

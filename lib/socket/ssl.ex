@@ -187,6 +187,7 @@ defmodule Socket.SSL do
   @spec listen(:inet.port_number, Keyword.t) :: { :ok, t } | { :error, term }
   def listen(port, options) do
     options = Keyword.put(options, :mode, :passive)
+    options = Keyword.put_new(options, :reuseaddr, true)
 
     case :ssl.listen(port, arguments(options)) do
       { :ok, sock } ->

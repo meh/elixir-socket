@@ -170,6 +170,7 @@ defmodule Socket.TCP do
   @spec listen(:inet.port_number, Keyword.t) :: { :ok, t } | { :error, :inet.posix }
   def listen(port, options) do
     options = Keyword.put(options, :mode, :passive)
+    options = Keyword.put_new(options, :reuseaddr, true)
 
     case :gen_tcp.listen(port, arguments(options)) do
       { :ok, sock } ->

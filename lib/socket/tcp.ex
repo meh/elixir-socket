@@ -87,6 +87,8 @@ defmodule Socket.TCP do
       address = binary_to_list(address)
     end
 
+    options = Keyword.put_new(options, :mode, :passive)
+
     case :gen_tcp.connect(address, port, arguments(options), options[:timeout] || :infinity) do
       { :ok, sock } ->
         reference = if (options[:mode] == :passive and options[:automatic] != false) or
@@ -226,6 +228,8 @@ defmodule Socket.TCP do
   @spec accept(t)            :: { :ok, t } | { :error, :inet.posix }
   @spec accept(Keyword.t, t) :: { :ok, t } | { :error, :inet.posix }
   def accept(options // [], socket(port: sock)) do
+    options = Keyword.put_new(options, :mode, :passive)
+
     case :gen_tcp.accept(sock, options[:timeout] || :infinity) do
       { :ok, sock } ->
         reference = if (options[:mode] == :passive and options[:automatic] != false) or

@@ -1,5 +1,7 @@
 defmodule Socket.Web do
-  defrecordp :web, socket: nil, path: nil, version: nil, key: nil
+  use Bitwise
+
+  defrecordp :web, socket: nil, path: nil, version: nil, origin: nil, key: nil
 
   def listen do
     listen([])
@@ -103,7 +105,8 @@ defmodule Socket.Web do
       raise RuntimeError, message: "missing key"
     end
 
-    socket = web(socket: client, path: path, key: headers["sec-websocket-key"], version: 13)
+    socket = web(socket: client,
+      origin: headers["origin"], path: path, version: 13, key: headers["sec-websocket-key"])
 
     if options[:verify] && !options[:verify].(socket) do
       client.close
@@ -123,18 +126,6 @@ defmodule Socket.Web do
     socket
   end
 
-  defmacrop known?(n) do
-    quote do
-      unquote(n) in [0x1, 0x2, 0x8, 0x9, 0xA]
-    end
-  end
-
-  defmacrop control?(n) do
-    quote do
-      unquote(n) in 0x8 .. 0xF
-    end
-  end
-
   defp opcode(0x1), do: :text
   defp opcode(0x2), do: :binary
   defp opcode(0x8), do: :close
@@ -146,6 +137,61 @@ defmodule Socket.Web do
   defp opcode(:close),  do: 0x8
   defp opcode(:ping),   do: 0x9
   defp opcode(:pong),   do: 0xA
+
+  defmacrop known?(n) do
+    quote do
+      unquote(n) in [0x1, 0x2, 0x8, 0x9, 0xA]
+    end
+  end
+
+  defmacrop data?(n) do
+    quote do
+      unquote(n) in 0x1 .. 0x7
+    end
+  end
+
+  defmacrop control?(n) do
+    quote do
+      unquote(n) in 0x8 .. 0xF
+    end
+  end
+
+  defp unmask(key, data) do
+    unmask(key, data, <<>>)
+  end
+
+  defp mask(key, data) do
+    unmask(key, data, <<>>)
+  end
+
+  # we have to XOR the key with the data iterating over the key when there's
+  # more data, this means we can optimize and do it 4 bytes at a time and then
+  # fallback to the smaller sizes
+  defp unmask(key, << data :: 32, rest :: binary >>, acc) do
+    unmask(key, rest, << acc :: binary, data ^^^ key :: 32 >>)
+  end
+
+  defp unmask(key, << data :: 24 >>, acc) do
+    << key :: 24, _ :: 8 >> = << key :: 32 >>
+
+    unmask(key, <<>>, << acc :: binary, data ^^^ key :: 24 >>)
+  end
+
+  defp unmask(key, << data :: 16 >>, acc) do
+    << key :: 16, _ :: 16 >> = << key :: 32 >>
+
+    unmask(key, <<>>, << acc :: binary, data ^^^ key :: 16 >>)
+  end
+
+  defp unmask(key, << data :: 8 >>, acc) do
+    << key :: 8, _ :: 24 >> = << key :: 32 >>
+
+    unmask(key, <<>>, << acc :: binary, data ^^^ key :: 8 >>)
+  end
+
+  defp unmask(_, <<>>, acc) do
+    acc
+  end
 
   defp recv(mask, length, web(socket: socket, version: 13)) do
     length = cond do
@@ -232,13 +278,13 @@ defmodule Socket.Web do
                 length :: 7 >> } when known?(opcode) and not control?(opcode) ->
         on_success { :fragmented, opcode(opcode), data }
 
-      # a fragmented packet
+      # a fragmented continuation
       { :ok, << 0      :: 1,
                 0      :: 3,
                 0      :: 4,
                 mask   :: 1,
                 length :: 7 >> } ->
-        on_success { :fragmented, :packet, data }
+        on_success { :fragmented, :continuation, data }
 
       # final fragmented packet
       { :ok, << 1      :: 1,
@@ -257,7 +303,7 @@ defmodule Socket.Web do
         on_success { opcode(opcode), data }
 
       { :ok, _ } ->
-        socket.close
+        close(:protocol_error)
 
         { :error, :protocol_error }
 
@@ -271,46 +317,18 @@ defmodule Socket.Web do
       { :ok, packet } ->
         packet
 
+      { :error, :protocol_error } ->
+        raise RuntimeErrror, message: "protocol error"
+
       { :error, code } ->
         raise Socket.Error, code: code
     end
   end
 
-  use Bitwise
+  def send(packet, options // [], web(socket: socket, version: 13)) do
 
-  defp unmask(key, data) do
-    unmask(key, data, <<>>)
   end
 
-  # we have to XOR the key with the data iterating over the key when there's
-  # more data, this means we can optimize and do it 4 bytes at a time and then
-  # fallback to the smaller sizes
-  defp unmask(key, << data :: 32, rest :: binary >>, acc) do
-    unmask(key, rest, << acc :: binary, data ^^^ key :: 32 >>)
-  end
-
-  defp unmask(key, << data :: 24 >>, acc) do
-    << key :: 24, _ :: 8 >> = << key :: 32 >>
-
-    unmask(key, <<>>, << acc :: binary, data ^^^ key :: 24 >>)
-  end
-
-  defp unmask(key, << data :: 16 >>, acc) do
-    << key :: 16, _ :: 16 >> = << key :: 32 >>
-
-    unmask(key, <<>>, << acc :: binary, data ^^^ key :: 16 >>)
-  end
-
-  defp unmask(key, << data :: 8 >>, acc) do
-    << key :: 8, _ :: 24 >> = << key :: 32 >>
-
-    unmask(key, <<>>, << acc :: binary, data ^^^ key :: 8 >>)
-  end
-
-  defp unmask(_, <<>>, acc) do
-    acc
-  end
-
-  def close(web(socket: socket, version: 13) = self) do
+  def close(reason // nil, web(socket: socket, version: 13) = self) do
   end
 end

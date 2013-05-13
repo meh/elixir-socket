@@ -318,7 +318,7 @@ defmodule Socket.Web do
         packet
 
       { :error, :protocol_error } ->
-        raise RuntimeErrror, message: "protocol error"
+        raise RuntimeError, message: "protocol error"
 
       { :error, code } ->
         raise Socket.Error, code: code

@@ -202,6 +202,18 @@ defmodule Socket.Web do
     end
   end
 
+  defmacrop on_success(result) do
+    quote do
+      case recv(var!(mask), var!(length), var!(self)) do
+        { :ok, var!(data) } ->
+          { :ok, unquote(result) }
+
+        { :error, _ } = error ->
+          error
+      end
+    end
+  end
+
   def recv(web(socket: socket, version: 13) = self) do
     case socket.recv(2) do
       # a non fragmented message packet
@@ -210,13 +222,7 @@ defmodule Socket.Web do
                 opcode :: 4,
                 mask   :: 1,
                 length :: 7 >> } when known?(opcode) and not control?(opcode) ->
-        case recv(mask, length, self) do
-          { :ok, data } ->
-            { :ok, { opcode(opcode), data } }
-
-          { :error, _} = error ->
-            error
-        end
+        on_success { opcode(opcode), data }
 
       # beginning of a fragmented packet
       { :ok, << 0      :: 1,
@@ -224,13 +230,7 @@ defmodule Socket.Web do
                 opcode :: 4,
                 mask   :: 1,
                 length :: 7 >> } when known?(opcode) and not control?(opcode) ->
-        case recv(mask, length, self) do
-          { :ok, data } ->
-            { :ok, { :fragmented, opcode(opcode), data } }
-
-          { :error, _} = error ->
-            error
-        end
+        on_success { :fragmented, opcode(opcode), data }
 
       # a fragmented packet
       { :ok, << 0      :: 1,
@@ -238,13 +238,7 @@ defmodule Socket.Web do
                 0      :: 4,
                 mask   :: 1,
                 length :: 7 >> } ->
-        case recv(mask, length, self) do
-          { :ok, data } ->
-            { :ok, { :fragmented, :packet, data } }
-
-          { :error, _} = error ->
-            error
-        end
+        on_success { :fragmented, :packet, data }
 
       # final fragmented packet
       { :ok, << 1      :: 1,
@@ -252,13 +246,7 @@ defmodule Socket.Web do
                 0      :: 4,
                 mask   :: 1,
                 length :: 7 >> } ->
-        case recv(mask, length, self) do
-          { :ok, data } ->
-            { :ok, { :fragmented, :end, data } }
-
-          { :error, _} = error ->
-            error
-        end
+        on_success { :fragmented, :end, data }
 
       # control packet
       { :ok, << 1      :: 1,
@@ -266,13 +254,7 @@ defmodule Socket.Web do
                 opcode :: 4,
                 mask   :: 1,
                 length :: 7 >> } when known?(opcode) and control?(opcode) and length <= 125 ->
-        case recv(mask, length, self) do
-          { :ok, data } ->
-            { :ok, { opcode(opcode), data } }
-
-          { :error, _} = error ->
-            error
-        end
+        on_success { opcode(opcode), data }
 
       { :ok, _ } ->
         socket.close

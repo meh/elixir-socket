@@ -129,6 +129,22 @@ defmodule Socket.Web do
     socket
   end
 
+  def local(web(socket: sock)) do
+    sock.local
+  end
+
+  def local!(web(socket: socket)) do
+    socket.local!
+  end
+
+  def remote(web(socket: socket)) do
+    socket.remote
+  end
+
+  def remote!(web(socket: socket)) do
+    socket.remote!
+  end
+
   Enum.each [ text: 0x1, binary: 0x2, close: 0x8, ping: 0x9, pong: 0xA ], fn { name, code } ->
     defp :opcode, [name], [], do: code
     defp :opcode, [code], [], do: name

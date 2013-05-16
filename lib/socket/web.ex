@@ -2,6 +2,8 @@ defmodule Socket.Web do
   use    Bitwise
   import Kernel, except: [length: 1]
 
+  @type t :: record
+
   defrecordp :web, socket: nil, path: nil, version: nil, origin: nil, key: nil
 
   def listen do

@@ -1,5 +1,6 @@
 defmodule Socket.Web do
-  use Bitwise
+  use    Bitwise
+  import Kernel, except: [length: 1]
 
   defrecordp :web, socket: nil, path: nil, version: nil, origin: nil, key: nil
 
@@ -126,17 +127,18 @@ defmodule Socket.Web do
     socket
   end
 
-  defp opcode(0x1), do: :text
-  defp opcode(0x2), do: :binary
-  defp opcode(0x8), do: :close
-  defp opcode(0x9), do: :ping
-  defp opcode(0xA), do: :pong
+  Enum.each [ text: 0x1, binary: 0x2, close: 0x8, ping: 0x9, pong: 0xA ], fn { name, code } ->
+    defp :opcode, [name], [], do: code
+    defp :opcode, [code], [], do: name
+  end
 
-  defp opcode(:text),   do: 0x1
-  defp opcode(:binary), do: 0x2
-  defp opcode(:close),  do: 0x8
-  defp opcode(:ping),   do: 0x9
-  defp opcode(:pong),   do: 0xA
+  Enum.each [ normal: 1000, going_away: 1001, protocol_error: 1002, unsupported_data: 1003,
+              reserved: 1004, no_status_received: 1005, abnormal: 1006, invalid_payload: 1007,
+              policy_violation: 1008, message_too_big: 1009, mandatory_extension: 1010,
+              internal_error: 1011, handshake: 1015 ], fn { name, code } ->
+    defp :close_code, [name], [], do: code
+    defp :close_code, [code], [], do: name
+  end
 
   defmacrop known?(n) do
     quote do
@@ -146,21 +148,28 @@ defmodule Socket.Web do
 
   defmacrop data?(n) do
     quote do
-      unquote(n) in 0x1 .. 0x7
+      unquote(n) in 0x1 .. 0x7 or unquote(n) in [:text, :binary]
     end
   end
 
   defmacrop control?(n) do
     quote do
-      unquote(n) in 0x8 .. 0xF
+      unquote(n) in 0x8 .. 0xF or unquote(n) in [:close, :ping, :pong]
     end
   end
 
-  defp unmask(key, data) do
-    unmask(key, data, <<>>)
+  defp mask(data) do
+    case :crypto.strong_rand_bytes(4) do
+      << key :: 32 >> ->
+        { key, unmask(key, data) }
+    end
   end
 
-  defp mask(key, data) do
+  def mask(key, data) do
+    { key, unmask(key, data) }
+  end
+
+  defp unmask(key, data) do
     unmask(key, data, <<>>)
   end
 
@@ -267,8 +276,18 @@ defmodule Socket.Web do
                 0      :: 3,
                 opcode :: 4,
                 mask   :: 1,
-                length :: 7 >> } when known?(opcode) and not control?(opcode) ->
-        on_success { opcode(opcode), data }
+                length :: 7 >> } when known?(opcode) and data?(opcode) ->
+        case on_success { opcode(opcode), data } do
+          { :ok, { :text, data } } = result ->
+            if String.valid?(data) do
+              result
+            else
+              { :error, :invalid_payload }
+            end
+
+          { :ok, { :binary, _ } } = result ->
+            result
+        end
 
       # beginning of a fragmented packet
       { :ok, << 0      :: 1,
@@ -300,11 +319,19 @@ defmodule Socket.Web do
                 opcode :: 4,
                 mask   :: 1,
                 length :: 7 >> } when known?(opcode) and control?(opcode) and length <= 125 ->
-        on_success { opcode(opcode), data }
+        on_success case opcode(opcode), do: (
+          :ping -> { :ping, data }
+          :pong -> { :pong, data }
+
+          :close -> case data do
+            <<>> ->
+              :close
+
+            << code :: 16, rest :: binary >> ->
+              { :close, close_code(code), rest }
+          end)
 
       { :ok, _ } ->
-        close(:protocol_error)
-
         { :error, :protocol_error }
 
       { :error, _ } = error ->
@@ -325,8 +352,62 @@ defmodule Socket.Web do
     end
   end
 
-  def send(packet, options // [], web(socket: socket, version: 13)) do
+  defp length(data) when byte_size(data) <= 125 do
+    << byte_size(data) :: 7 >>
+  end
 
+  defp length(data) when byte_size(data) <= 65536 do
+    << 126 :: 7, byte_size(data) :: 16 >>
+  end
+
+  defp length(data) when byte_size(data) <= 18446744073709551616 do
+    << 127 :: 7, byte_size(data) :: 64 >>
+  end
+
+  defp forge(nil, data) do
+    << 0 :: 1, length(data) :: bitstring, data :: bitstring >>
+  end
+
+  defp forge(true, data) do
+    { key, data } = mask(data)
+
+    << 1 :: 1, length(data) :: bitstring, key :: 32, data :: bitstring >>
+  end
+
+  defp forge(key, data) do
+    { key, data } = mask(key, data)
+
+    << 1 :: 1, length(data) :: bitstring, key :: 32, data :: bitstring >>
+  end
+
+  def send(packet, options // [], self)
+
+  def send({ opcode, data }, options, web(socket: socket, version: 13)) when data?(opcode) do
+    socket.send(<< 1              :: 1,
+                   0              :: 3,
+                   opcode(opcode) :: 4,
+                   forge(options[:mask], data) :: binary >>)
+  end
+
+  def send({ :fragmented, :end, data }, options, web(socket: socket, version: 13)) do
+    socket.send(<< 1 :: 1,
+                   0 :: 3,
+                   0 :: 4,
+                   forge(options[:mask], data) :: binary >>)
+  end
+
+  def send({ :fragmented, :continuation, data }, options, web(socket: socket, version: 13)) do
+    socket.send(<< 0 :: 1,
+                   0 :: 3,
+                   0 :: 4,
+                   forge(options[:mask], data) :: binary >>)
+  end
+
+  def send({ :fragmented, opcode, data }, options, web(socket: socket, version: 13)) do
+    socket.send(<< 0              :: 1,
+                   0              :: 3,
+                   opcode(opcode) :: 4,
+                   forge(options[:mask], data) :: binary >>)
   end
 
   def close(reason // nil, web(socket: socket, version: 13) = self) do

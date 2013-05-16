@@ -318,7 +318,7 @@ defmodule Socket.Web do
                 0      :: 3,
                 opcode :: 4,
                 mask   :: 1,
-                length :: 7 >> } when known?(opcode) and control?(opcode) and length <= 125 ->
+                length :: 7 >> } when known?(opcode) and control?(opcode) ->
         on_success case opcode(opcode), do: (
           :ping -> { :ping, data }
           :pong -> { :pong, data }
@@ -382,7 +382,7 @@ defmodule Socket.Web do
 
   def send(packet, options // [], self)
 
-  def send({ opcode, data }, options, web(socket: socket, version: 13)) when data?(opcode) do
+  def send({ opcode, data }, options, web(socket: socket, version: 13)) when data?(opcode) and opcode != :close do
     socket.send(<< 1              :: 1,
                    0              :: 3,
                    opcode(opcode) :: 4,
@@ -410,6 +410,76 @@ defmodule Socket.Web do
                    forge(options[:mask], data) :: binary >>)
   end
 
-  def close(reason // nil, web(socket: socket, version: 13) = self) do
+  def send!(packet, options // [], self) do
+    case send(packet, options, self) do
+      :ok ->
+        :ok
+
+      { :error, code } ->
+        raise Socket.Error, code: code
+    end
+  end
+
+  def ping(cookie // :crypt.rand_bytes(32), self) do
+    case send({ :ping, cookie }, self) do
+      :ok ->
+        cookie
+
+      { :error, _ } = error ->
+        error
+    end
+  end
+
+  def ping!(cookie // :crypt.rand_bytes(32), self) do
+    send!({ :ping, cookie }, self)
+
+    cookie
+  end
+
+  def pong(cookie, self) do
+    send({ :pong, cookie }, self)
+  end
+
+  def pong!(cookie, self) do
+    send!({ :pong, cookie }, self)
+  end
+
+  def close(web(socket: socket, version: 13) = self) do
+    socket.send(<< 1              :: 1,
+                   0              :: 3,
+                   opcode(:close) :: 4,
+                   forge(nil, <<>>) :: binary >>)
+  end
+
+  def close(reason, options // [], web(socket: socket, version: 13) = self) do
+    if is_tuple(reason) do
+      { reason, data } = reason
+    else
+      data = <<>>
+    end
+
+    socket.send(<< 1              :: 1,
+                   0              :: 3,
+                   opcode(:close) :: 4,
+                   forge(options[:mask],
+                     << close_code(reason) :: 16, data :: binary >>) :: binary >>)
+
+    do_close(self.recv, self)
+  end
+
+  defp do_close({ :ok, :close }, self) do
+    self.abort
+  end
+
+  defp do_close({ :ok, { :close, reason, rest } }, self) do
+    self.abort
+  end
+
+  defp do_close(_, self) do
+    do_close(self.recv, self)
+  end
+
+  def abort(web(socket: socket)) do
+    socket.close
   end
 end

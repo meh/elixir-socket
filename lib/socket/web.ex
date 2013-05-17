@@ -482,7 +482,9 @@ defmodule Socket.Web do
                    forge(options[:mask],
                      << close_code(reason) :: 16, data :: binary >>) :: binary >>)
 
-    do_close(self.recv, self)
+    unless options[:wait] == false do
+      do_close(self.recv, self)
+    end
   end
 
   defp do_close({ :ok, :close }, self) do

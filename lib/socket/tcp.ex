@@ -393,8 +393,8 @@ defmodule Socket.TCP do
   creation.
   """
   @spec recv(t) :: { :ok, binary | char_list } | { :error, :inet.posix }
-  def recv(socket(port: port)) do
-    :gen_tcp.recv(port, 0)
+  def recv(self) do
+    recv(0, self)
   end
 
   @doc """
@@ -402,8 +402,8 @@ defmodule Socket.TCP do
   options.
   """
   @spec recv(non_neg_integer | Keyword.t, t) :: { :ok, binary | char_list } | { :error, :inet.posix }
-  def recv(length, socket(port: port)) when is_integer(length) do
-    :gen_tcp.recv(port, length)
+  def recv(length, self) when is_integer(length) do
+    recv(0, [], self)
   end
 
   def recv(options, self) do
@@ -415,10 +415,15 @@ defmodule Socket.TCP do
   """
   @spec recv(non_neg_integer, Keyword.t, t) :: { :ok, binary | char_list } | { :error, :inet.posix }
   def recv(length, options, socket(port: port)) do
-    if timeout = options[:timeout] do
-      :gen_tcp.recv(port, length, timeout)
-    else
-      :gen_tcp.recv(port, length)
+    case :gen_tcp.recv(port, length, options[:timeout] || :infinity) do
+      { :ok, _ } = ok ->
+        ok
+
+      { :error, :closed } ->
+        { :ok, nil }
+
+      { :error, _ } = error ->
+        error
     end
   end
 

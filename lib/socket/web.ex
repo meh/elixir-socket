@@ -6,6 +6,22 @@ defmodule Socket.Web do
 
   defrecordp :web, socket: nil, path: nil, version: nil, origin: nil, key: nil, mask: nil
 
+  defp headers(acc, socket) do
+    case socket.recv! do
+      "\r\n" ->
+        acc
+
+      line ->
+        [_, name, value] = Regex.run %r/^(.*?):\s*(.*?)\s*$/, line
+
+        headers([{ String.downcase(name), value } | acc], socket)
+    end
+  end
+
+  defp key(value) do
+    :base64.encode(:crypto.sha(value <> "258EAFA5-E914-47DA-95CA-C5AB0DC85B11"))
+  end
+
   def listen do
     listen([])
   end
@@ -58,7 +74,20 @@ defmodule Socket.Web do
     web(socket: Socket.TCP.listen!(port, options))
   end
 
-  def accept(options // [], self) do
+  def accept(web(key: nil) = self) do
+    accept([], self)
+  end
+
+  def accept(web() = self) do
+    try do
+      { :ok, accept!(self) }
+    rescue
+      Socket.Error[code: code] ->
+        { :error, code }
+    end
+  end
+
+  def accept(options, web(key: nil) = self) do
     try do
       { :ok, accept!(options, self) }
     rescue
@@ -73,23 +102,22 @@ defmodule Socket.Web do
     end
   end
 
-  defp headers(acc, socket) do
-    case socket.recv! do
-      "\r\n" ->
-        acc
-
-      line ->
-        [_, name, value] = Regex.run %r/^(.*?):\s*(.*?)\s*$/, line
-
-        headers([{ String.downcase(name), value } | acc], socket)
-    end
+  def accept!(web(key: nil) = self) do
+    accept!([], self)
   end
 
-  defp key(value) do
-    :base64.encode(:crypto.sha(value <> "258EAFA5-E914-47DA-95CA-C5AB0DC85B11"))
+  def accept!(web(socket: socket, key: key)) do
+    socket.options!(packet: :raw)
+    socket.send!([
+      "HTTP/1.1 101 Switching Protocols", "\r\n",
+      "Upgrade: websocket", "\r\n",
+      "Connection: Upgrade", "\r\n",
+      "Sec-WebSocket-Accept: #{key(key)}", "\r\n",
+      "Sec-WebSocket-Protocol: chat", "\r\n",
+      "\r\n"])
   end
 
-  def accept!(options // [], web(socket: socket)) do
+  def accept!(_options, web(socket: socket, key: nil)) do
     client = socket.accept!
     client.options!(packet: :line)
 
@@ -108,25 +136,7 @@ defmodule Socket.Web do
       raise RuntimeError, message: "missing key"
     end
 
-    socket = web(socket: client,
-      origin: headers["origin"], path: path, version: 13, key: headers["sec-websocket-key"])
-
-    if options[:verify] && !options[:verify].(socket) do
-      client.close
-
-      raise RuntimeError, message: "verification failed"
-    end
-
-    client.options!(packet: :raw)
-    client.send!([
-      "HTTP/1.1 101 Switching Protocols", "\r\n",
-      "Upgrade: websocket", "\r\n",
-      "Connection: Upgrade", "\r\n",
-      "Sec-WebSocket-Accept: #{key(web(socket, :key))}", "\r\n",
-      "Sec-WebSocket-Protocol: chat", "\r\n",
-      "\r\n"])
-
-    socket
+    web(socket: client, origin: headers["origin"], path: path, version: 13, key: headers["sec-websocket-key"])
   end
 
   def local(web(socket: sock)) do

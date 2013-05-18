@@ -4,7 +4,7 @@ defmodule Socket.Web do
 
   @type t :: record
 
-  defrecordp :web, socket: nil, path: nil, version: nil, origin: nil, key: nil
+  defrecordp :web, socket: nil, path: nil, version: nil, origin: nil, key: nil, mask: nil
 
   def listen do
     listen([])
@@ -183,7 +183,7 @@ defmodule Socket.Web do
     end
   end
 
-  def mask(key, data) do
+  defp mask(key, data) do
     { key, unmask(key, data) }
   end
 
@@ -400,32 +400,32 @@ defmodule Socket.Web do
 
   def send(packet, options // [], self)
 
-  def send({ opcode, data }, options, web(socket: socket, version: 13)) when data?(opcode) and opcode != :close do
+  def send({ opcode, data }, options, web(socket: socket, version: 13, mask: mask)) when data?(opcode) and opcode != :close do
     socket.send(<< 1              :: 1,
                    0              :: 3,
                    opcode(opcode) :: 4,
-                   forge(options[:mask], data) :: binary >>)
+                   forge(options[:mask] || mask, data) :: binary >>)
   end
 
-  def send({ :fragmented, :end, data }, options, web(socket: socket, version: 13)) do
+  def send({ :fragmented, :end, data }, options, web(socket: socket, version: 13, mask: mask)) do
     socket.send(<< 1 :: 1,
                    0 :: 3,
                    0 :: 4,
-                   forge(options[:mask], data) :: binary >>)
+                   forge(options[:mask] || mask, data) :: binary >>)
   end
 
-  def send({ :fragmented, :continuation, data }, options, web(socket: socket, version: 13)) do
+  def send({ :fragmented, :continuation, data }, options, web(socket: socket, version: 13, mask: mask)) do
     socket.send(<< 0 :: 1,
                    0 :: 3,
                    0 :: 4,
-                   forge(options[:mask], data) :: binary >>)
+                   forge(options[:mask] || mask, data) :: binary >>)
   end
 
-  def send({ :fragmented, opcode, data }, options, web(socket: socket, version: 13)) do
+  def send({ :fragmented, opcode, data }, options, web(socket: socket, version: 13, mask: mask)) do
     socket.send(<< 0              :: 1,
                    0              :: 3,
                    opcode(opcode) :: 4,
-                   forge(options[:mask], data) :: binary >>)
+                   forge(options[:mask] || mask, data) :: binary >>)
   end
 
   def send!(packet, options // [], self) do
@@ -462,14 +462,14 @@ defmodule Socket.Web do
     send!({ :pong, cookie }, self)
   end
 
-  def close(web(socket: socket, version: 13) = self) do
+  def close(web(socket: socket, version: 13)) do
     socket.send(<< 1              :: 1,
                    0              :: 3,
                    opcode(:close) :: 4,
                    forge(nil, <<>>) :: binary >>)
   end
 
-  def close(reason, options // [], web(socket: socket, version: 13) = self) do
+  def close(reason, options // [], web(socket: socket, version: 13, mask: mask) = self) do
     if is_tuple(reason) do
       { reason, data } = reason
     else
@@ -479,7 +479,7 @@ defmodule Socket.Web do
     socket.send(<< 1              :: 1,
                    0              :: 3,
                    opcode(:close) :: 4,
-                   forge(options[:mask],
+                   forge(options[:mask] || mask,
                      << close_code(reason) :: 16, data :: binary >>) :: binary >>)
 
     unless options[:wait] == false do
@@ -491,7 +491,7 @@ defmodule Socket.Web do
     self.abort
   end
 
-  defp do_close({ :ok, { :close, reason, rest } }, self) do
+  defp do_close({ :ok, { :close, _, _ } }, self) do
     self.abort
   end
 

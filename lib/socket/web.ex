@@ -114,6 +114,7 @@ defmodule Socket.Web do
       "Connection: Upgrade", "\r\n",
       "Sec-WebSocket-Accept: #{key(key)}", "\r\n",
       "Sec-WebSocket-Protocol: chat", "\r\n",
+      "Sec-WebSocket-Version: 13", "\r\n",
       "\r\n"])
   end
 

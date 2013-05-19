@@ -12,7 +12,7 @@ defmodule Socket.Web do
 
   @type t :: record
 
-  defrecordp :web, socket: nil, path: nil, version: nil, origin: nil, key: nil, mask: nil
+  defrecordp :web, socket: nil, version: nil, path: nil, origin: nil, key: nil, mask: nil
 
   defp headers(acc, socket) do
     case socket.recv! do

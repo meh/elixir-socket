@@ -30,6 +30,100 @@ defmodule Socket.Web do
     :base64.encode(:crypto.sha(value <> "258EAFA5-E914-47DA-95CA-C5AB0DC85B11"))
   end
 
+  def connect({ address, port }, options) do
+    connect(address, port, options)
+  end
+
+  def connect(address, options) when is_list(options) do
+    connect(address, if(options[:secure], do: 443, else: 80), options)
+  end
+
+  def connect(address, port) when is_integer(port) do
+    connect(address, port, [])
+  end
+
+  def connect(address, port, options) do
+    try do
+      { :ok, connect!(address, port, options) }
+    rescue
+      MatchError ->
+        { :error, "malformed handshake" }
+
+      RuntimeError[message: msg] ->
+        { :error, msg }
+
+      Socket.Error[code: code] ->
+        { :error, code }
+    end
+  end
+
+  def connect!({ address, port }) do
+    connect!(address, port, [])
+  end
+
+  def connect!({ address, port }, options) do
+    connect!(address, port, options)
+  end
+
+  def connect!(address, options) when is_list(options) do
+    connect!(address, if(options[:secure], do: 443, else: 80), options)
+  end
+
+  def connect!(address, port) when is_integer(port) do
+    connect!(address, port, [])
+  end
+
+  def connect!(address, port, options) do
+    mod = if options[:secure] do
+      Socket.SSL
+    else
+      Socket.TCP
+    end
+
+    path   = options[:path] || "/"
+    origin = options[:origin]
+    key    = :base64.encode(options[:key] || "fork the dongles")
+
+    client = mod.connect!(address, port)
+    client.options(packet: :raw)
+    client.send!([
+      "GET #{path} HTTP/1.1", "\r\n",
+      "Host: #{address}", "\r\n",
+      if(origin, do: ["Origin: #{origin}", "\r\n"], else: []),
+      "Upgrade: websocket", "\r\n",
+      "Connection: Upgrade", "\r\n",
+      "Sec-WebSocket-Key: #{key}", "\r\n",
+      "Sec-WebSocket-Protocol: chat", "\r\n",
+      "Sec-WebSocket-Version: 13", "\r\n",
+      "\r\n"])
+
+    client.options(packet: :line)
+    [_, "101"] = Regex.run %r"^HTTP/1.1 (\d+) .*$", client.recv!
+    headers    = headers([], client)
+
+    if headers["upgrade"] != "websocket" or headers["connection"] != "Upgrade" do
+      client.close
+
+      raise RuntimeError, message: "malformed upgrade response"
+    end
+
+    if headers["sec-websocket-version"] && headers["sec-websocket-version"] != "13" do
+      client.close
+
+      raise RuntimeError, message: "unsupported version"
+    end
+
+    if !headers["sec-websocket-accept"] or headers["sec-websocket-accept"] != key(key) do
+      client.close
+
+      raise RuntimeError, message: "wrong key response"
+    end
+
+    client.options(packet: :raw)
+
+    web(socket: client, version: 13, path: path, origin: origin, key: key, mask: true)
+  end
+
   def listen do
     listen([])
   end

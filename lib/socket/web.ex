@@ -287,7 +287,7 @@ defmodule Socket.Web do
 
   defmacrop on_success(result) do
     quote do
-      case recv(var!(mask), var!(length), var!(self)) do
+      case recv(var!(mask) == 1, var!(length), var!(self)) do
         { :ok, var!(data) } ->
           { :ok, unquote(result) }
 

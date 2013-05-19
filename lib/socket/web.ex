@@ -137,6 +137,8 @@ defmodule Socket.Web do
       raise RuntimeError, message: "missing key"
     end
 
+    client.options(packet: :raw)
+
     web(socket: client, origin: headers["origin"], path: path, version: 13, key: headers["sec-websocket-key"])
   end
 

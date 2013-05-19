@@ -403,7 +403,7 @@ defmodule Socket.TCP do
   """
   @spec recv(non_neg_integer | Keyword.t, t) :: { :ok, binary | char_list } | { :error, :inet.posix }
   def recv(length, self) when is_integer(length) do
-    recv(0, [], self)
+    recv(length, [], self)
   end
 
   def recv(options, self) do

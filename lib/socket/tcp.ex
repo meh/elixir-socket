@@ -44,6 +44,14 @@ defmodule Socket.TCP do
 
   """
 
+  defexception Error, code: nil do
+    @type t :: Error.t
+
+    def message(self) do
+      to_binary(:inet.format_error(self.code))
+    end
+  end
+
   @type t :: record
 
   defrecordp :socket, port: nil, reference: nil
@@ -59,7 +67,7 @@ defmodule Socket.TCP do
   @doc """
   Create a TCP socket connecting to the given host and port tuple.
   """
-  @spec connect({ Socket.Address.t, :inet.port_number }) :: { :ok, t } | { :error, :inet.posix }
+  @spec connect({ Socket.Address.t, :inet.port_number }) :: { :ok, t } | { :error, Error.t }
   def connect({ address, port }) do
     connect(address, port)
   end
@@ -68,7 +76,7 @@ defmodule Socket.TCP do
   Create a TCP socket connecting to the given host and port tuple and options,
   or to the given host and port.
   """
-  @spec connect({ Socket.Address.t, :inet.port_number } | Socket.Address.t, Keyword.t | :inet.port_number) :: { :ok, t } | { :error, :inet.posix }
+  @spec connect({ Socket.Address.t, :inet.port_number } | Socket.Address.t, Keyword.t | :inet.port_number) :: { :ok, t } | { :error, Error.t }
   def connect({ address, port }, options) when is_list(options) do
     connect(address, port, options)
   end
@@ -80,8 +88,8 @@ defmodule Socket.TCP do
   @doc """
   Create a TCP socket connecting to the given host and port.
   """
-  @spec connect(String.t | :inet.ip_address, :inet.port_number)            :: { :ok, t } | { :error, :inet.posix }
-  @spec connect(String.t | :inet.ip_address, :inet.port_number, Keyword.t) :: { :ok, t } | { :error, :inet.posix }
+  @spec connect(String.t | :inet.ip_address, :inet.port_number)            :: { :ok, t } | { :error, Error.t }
+  @spec connect(String.t | :inet.ip_address, :inet.port_number, Keyword.t) :: { :ok, t } | { :error, Error.t }
   def connect(address, port, options) do
     if is_binary(address) do
       address = binary_to_list(address)
@@ -138,7 +146,7 @@ defmodule Socket.TCP do
         socket
 
       { :error, code } ->
-        raise Socket.Error, code: code
+        raise Error, code: code
     end
   end
 
@@ -146,7 +154,7 @@ defmodule Socket.TCP do
   Create a TCP socket listening on an OS chosen port, use `local` to know the
   port it was bound on.
   """
-  @spec listen :: { :ok, t } | { :error, :inet.posix }
+  @spec listen :: { :ok, t } | { :error, Error.t }
   def listen do
     listen(0, [])
   end
@@ -155,7 +163,7 @@ defmodule Socket.TCP do
   Create a TCP socket listening on an OS chosen port using the given options or
   listening on the given port.
   """
-  @spec listen(:inet.port_number | Keyword.t) :: { :ok, t } | { :error, :inet.posix }
+  @spec listen(:inet.port_number | Keyword.t) :: { :ok, t } | { :error, Error.t }
   def listen(port) when is_integer(port) do
     listen(port, [])
   end
@@ -167,7 +175,7 @@ defmodule Socket.TCP do
   @doc """
   Create a TCP socket listening on the given port and using the given options.
   """
-  @spec listen(:inet.port_number, Keyword.t) :: { :ok, t } | { :error, :inet.posix }
+  @spec listen(:inet.port_number, Keyword.t) :: { :ok, t } | { :error, Error.t }
   def listen(port, options) do
     options = Keyword.put(options, :mode, :passive)
     options = Keyword.put_new(options, :reuseaddr, true)
@@ -219,15 +227,15 @@ defmodule Socket.TCP do
         socket
 
       { :error, code } ->
-        raise Socket.Error, code: code
+        raise Error, code: code
     end
   end
 
   @doc """
   Accept a new client from a listening socket, optionally passing options.
   """
-  @spec accept(t)            :: { :ok, t } | { :error, :inet.posix }
-  @spec accept(Keyword.t, t) :: { :ok, t } | { :error, :inet.posix }
+  @spec accept(t)            :: { :ok, t } | { :error, Error.t }
+  @spec accept(Keyword.t, t) :: { :ok, t } | { :error, Error.t }
   def accept(options // [], socket(port: sock)) do
     options = Keyword.put_new(options, :mode, :passive)
 
@@ -268,14 +276,14 @@ defmodule Socket.TCP do
         socket
 
       { :error, code } ->
-        raise Socket.Error, code: code
+        raise Error, code: code
     end
   end
 
   @doc """
   Set the process which will receive the messages.
   """
-  @spec process(pid, t) :: :ok | { :error, :closed | :not_owner | :inet.posix }
+  @spec process(pid, t) :: :ok | { :error, :closed | :not_owner | Error.t }
   def process(pid, socket(port: port)) do
     :gen_tcp.controlling_process(port, pid)
   end
@@ -296,14 +304,14 @@ defmodule Socket.TCP do
         raise RuntimeError, message: "the current process isn't the owner"
 
       code ->
-        raise Socket.Error, code: code
+        raise Error, code: code
     end
   end
 
   @doc """
   Set options of the socket.
   """
-  @spec options(Keyword.t, t) :: :ok | { :error, :inet.posix }
+  @spec options(Keyword.t, t) :: :ok | { :error, Error.t }
   def options(opts, socket(port: port)) do
     :inet.setopts(port, arguments(opts))
   end
@@ -318,14 +326,14 @@ defmodule Socket.TCP do
         :ok
 
       { :error, code } ->
-        raise Socket.Error, code: code
+        raise Error, code: code
     end
   end
 
   @doc """
   Return the local address and port.
   """
-  @spec local(t) :: { :ok, { :inet.ip_address, :inet.port_number } } | { :error, :inet.posix }
+  @spec local(t) :: { :ok, { :inet.ip_address, :inet.port_number } } | { :error, Error.t }
   def local(socket(port: port)) do
     :inet.sockname(port)
   end
@@ -340,14 +348,14 @@ defmodule Socket.TCP do
         result
 
       { :error, code } ->
-        raise Socket.Error, code: code
+        raise Error, code: code
     end
   end
 
   @doc """
   Return the remote address and port.
   """
-  @spec remote(t) :: { :ok, { :inet.ip_address, :inet.port_number } } | { :error, :inet.posix }
+  @spec remote(t) :: { :ok, { :inet.ip_address, :inet.port_number } } | { :error, Error.t }
   def remote(socket(port: port)) do
     :inet.peername(port)
   end
@@ -362,14 +370,14 @@ defmodule Socket.TCP do
         result
 
       { :error, code } ->
-        raise Socket.Error, code: code
+        raise Error, code: code
     end
   end
 
   @doc """
   Send a packet through the socket.
   """
-  @spec send(iodata, t) :: :ok | { :error, :inet.posix }
+  @spec send(iodata, t) :: :ok | { :error, Error.t }
   def send(value, socket(port: port)) do
     :gen_tcp.send(port, value)
   end
@@ -384,7 +392,7 @@ defmodule Socket.TCP do
         :ok
 
       { :error, code } ->
-        raise Socket.Error, code: code
+        raise Error, code: code
     end
   end
 
@@ -392,7 +400,7 @@ defmodule Socket.TCP do
   Receive a packet from the socket, following the `:packet` option set at
   creation.
   """
-  @spec recv(t) :: { :ok, binary | char_list } | { :error, :inet.posix }
+  @spec recv(t) :: { :ok, binary | char_list } | { :error, Error.t }
   def recv(self) do
     recv(0, self)
   end
@@ -401,7 +409,7 @@ defmodule Socket.TCP do
   Receive a packet from the socket, with either the given length or the given
   options.
   """
-  @spec recv(non_neg_integer | Keyword.t, t) :: { :ok, binary | char_list } | { :error, :inet.posix }
+  @spec recv(non_neg_integer | Keyword.t, t) :: { :ok, binary | char_list } | { :error, Error.t }
   def recv(length, self) when is_integer(length) do
     recv(length, [], self)
   end
@@ -413,7 +421,7 @@ defmodule Socket.TCP do
   @doc """
   Receive a packet from the socket with the given length and options.
   """
-  @spec recv(non_neg_integer, Keyword.t, t) :: { :ok, binary | char_list } | { :error, :inet.posix }
+  @spec recv(non_neg_integer, Keyword.t, t) :: { :ok, binary | char_list } | { :error, Error.t }
   def recv(length, options, socket(port: port)) do
     case :gen_tcp.recv(port, length, options[:timeout] || :infinity) do
       { :ok, _ } = ok ->
@@ -438,7 +446,7 @@ defmodule Socket.TCP do
         packet
 
       { :error, code } ->
-        raise Socket.Error, code: code
+        raise Error, code: code
     end
   end
 
@@ -453,7 +461,7 @@ defmodule Socket.TCP do
         packet
 
       { :error, code } ->
-        raise Socket.Error, code: code
+        raise Error, code: code
     end
   end
 
@@ -468,14 +476,14 @@ defmodule Socket.TCP do
         packet
 
       { :error, code } ->
-        raise Socket.Error, code: code
+        raise Error, code: code
     end
   end
 
   @doc """
   Shutdown the socket for the given mode.
   """
-  @spec shutdown(:read | :write | :both, t) :: :ok | { :error, :inet.posix }
+  @spec shutdown(:read | :write | :both, t) :: :ok | { :error, Error.t }
   def shutdown(how, socket(port: sock)) do
     :gen_tcp.shutdown(sock, case how do
       :read  -> :read
@@ -494,7 +502,7 @@ defmodule Socket.TCP do
         :ok
 
       { :error, code } ->
-        raise Socket.Error, code: code
+        raise Error, code: code
     end
   end
 

@@ -34,6 +34,14 @@ defmodule Socket.UDP do
 
   """
 
+  defexception Error, code: nil do
+    @type t :: Error.t
+
+    def message(self) do
+      to_binary(:inet.format_error(self.code))
+    end
+  end
+
   @type t :: record
 
   defrecordp :socket, port: nil, reference: nil
@@ -50,7 +58,7 @@ defmodule Socket.UDP do
   Create a UDP socket listening on an OS chosen port, use `local` to know the
   port it was bound on.
   """
-  @spec open :: { :ok, t } | { :error, :inet.posix }
+  @spec open :: { :ok, t } | { :error, Error.t }
   def open do
     open(0, [])
   end
@@ -58,7 +66,7 @@ defmodule Socket.UDP do
   @doc """
   Create a UDP socket listening on the given port or using the given options.
   """
-  @spec open(:inet.port_number | Keyword.t) :: { :ok, t } | { :error, :inet.posix }
+  @spec open(:inet.port_number | Keyword.t) :: { :ok, t } | { :error, Error.t }
   def open(port) when is_integer(port) do
     open(port, [])
   end
@@ -70,7 +78,7 @@ defmodule Socket.UDP do
   @doc """
   Create a UDP socket listening on the given port and using the given options.
   """
-  @spec open(:inet.port_number, Keyword.t) :: { :ok, t } | { :error, :inet.posix }
+  @spec open(:inet.port_number, Keyword.t) :: { :ok, t } | { :error, Error.t }
   def open(port, options) do
     case :gen_udp.open(port, arguments(options)) do
       { :ok, sock } ->
@@ -120,14 +128,14 @@ defmodule Socket.UDP do
         socket
 
       { :error, code } ->
-        raise Socket.Error, code: code
+        raise Error, code: code
     end
   end
 
   @doc """
   Set the process which will receive the messages.
   """
-  @spec process(pid, t) :: :ok | { :error, :closed | :not_owner | :inet.posix }
+  @spec process(pid, t) :: :ok | { :error, :closed | :not_owner | Error.t }
   def process(pid, socket(port: port)) do
     :gen_udp.controlling_process(port, pid)
   end
@@ -148,14 +156,14 @@ defmodule Socket.UDP do
         raise RuntimeError, message: "the current process isn't the owner"
 
       code ->
-        raise Socket.Error, code: code
+        raise Error, code: code
     end
   end
 
   @doc """
   Set options of the socket.
   """
-  @spec options(Keyword.t, t) :: :ok | { :error, :inet.posix }
+  @spec options(Keyword.t, t) :: :ok | { :error, Error.t }
   def options(opts, socket(port: port)) do
     :inet.setopts(port, arguments(opts))
   end
@@ -170,14 +178,14 @@ defmodule Socket.UDP do
         :ok
 
       { :error, code } ->
-        raise Socket.Error, code: code
+        raise Error, code: code
     end
   end
 
   @doc """
   Send a packet to the given address and port.
   """
-  @spec send(String.t | :inet.ip_address, :inet.port_number, iodata, t) :: :ok | { :error, :inet.posix }
+  @spec send(String.t | :inet.ip_address, :inet.port_number, iodata, t) :: :ok | { :error, Error.t }
   def send(address, port, value, socket(port: sock)) do
     if is_binary(address) do
       address = binary_to_list(address)
@@ -196,7 +204,7 @@ defmodule Socket.UDP do
         :ok
 
       { :error, code } ->
-        raise Socket.Error, code: code
+        raise Error, code: code
     end
   end
 
@@ -218,7 +226,7 @@ defmodule Socket.UDP do
     @doc """
     Send a packet to the client.
     """
-    @spec send(iodata, t) :: :ok | { :error, :inet.posix }
+    @spec send(iodata, t) :: :ok | { :error, Error.t }
     def send(value, association(socket: socket, address: address, port: port)) do
       socket.send(address, port, value)
     end
@@ -235,7 +243,7 @@ defmodule Socket.UDP do
   @doc """
   Receive a packet from the socket, defaults to 512 bytes.
   """
-  @spec recv(t) :: { :ok, { iodata, Association.t } } | { :error, :inet.posix }
+  @spec recv(t) :: { :ok, { iodata, Association.t } } | { :error, Error.t }
   def recv(self) do
     recv(512, self)
   end
@@ -244,7 +252,7 @@ defmodule Socket.UDP do
   Receive a packet from the socket, with either the given length or the given
   options.
   """
-  @spec recv(non_neg_integer | Keyword.t, t) :: { :ok, { iodata, Association.t } } | { :error, :inet.posix }
+  @spec recv(non_neg_integer | Keyword.t, t) :: { :ok, { iodata, Association.t } } | { :error, Error.t }
   def recv(length, self) when is_integer(length) do
     recv(length, [], self)
   end
@@ -256,7 +264,7 @@ defmodule Socket.UDP do
   @doc """
   Receive a packet from the socket, with the given length and options.
   """
-  @spec recv(non_neg_integer, Keyword.t, t) :: { :ok, { iodata, Association.t } } | { :error, :inet.posix }
+  @spec recv(non_neg_integer, Keyword.t, t) :: { :ok, { iodata, Association.t } } | { :error, Error.t }
   def recv(length, options, socket(port: port) = self) do
     case :gen_udp.recv(port, length, options[:timeout] || :infinity) do
       { :ok, { address, port, data } } ->
@@ -278,7 +286,7 @@ defmodule Socket.UDP do
         packet
 
       { :error, code } ->
-        raise Socket.Error, code: code
+        raise Error, code: code
     end
   end
 
@@ -293,7 +301,7 @@ defmodule Socket.UDP do
         packet
 
       { :error, code } ->
-        raise Socket.Error, code: code
+        raise Error, code: code
     end
   end
 
@@ -308,7 +316,7 @@ defmodule Socket.UDP do
         packet
 
       { :error, code } ->
-        raise Socket.Error, code: code
+        raise Error, code: code
     end
   end
 

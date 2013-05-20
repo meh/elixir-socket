@@ -24,6 +24,8 @@ defmodule Socket.SSL do
   end
 
   defexception Error, code: nil do
+    @type t :: term
+
     def message(self) do
       to_binary(:ssl.format_error(self.code))
     end
@@ -390,7 +392,7 @@ defmodule Socket.SSL do
         :ok
 
       { :error, code } ->
-        raise Socket.Error, code: code
+        raise Error, code: code
     end
   end
 

@@ -52,7 +52,10 @@ defmodule Socket.Web do
       RuntimeError[message: msg] ->
         { :error, msg }
 
-      Socket.Error[code: code] ->
+      Socket.TCP.Error[code: code] ->
+        { :error, code }
+
+      Socket.SSL.Error[code: code] ->
         { :error, code }
     end
   end
@@ -184,7 +187,10 @@ defmodule Socket.Web do
     try do
       { :ok, accept!(self) }
     rescue
-      Socket.Error[code: code] ->
+      Socket.TCP.Error[code: code] ->
+        { :error, code }
+
+      Socket.SSL.Error[code: code] ->
         { :error, code }
     end
   end
@@ -199,7 +205,10 @@ defmodule Socket.Web do
       RuntimeError[message: msg] ->
         { :error, msg }
 
-      Socket.Error[code: code] ->
+      Socket.TCP.Error[code: code] ->
+        { :error, code }
+
+      Socket.SSL.Error[code: code] ->
         { :error, code }
     end
   end
@@ -402,6 +411,20 @@ defmodule Socket.Web do
     end
   end
 
+  @type error :: Socket.TCP.error | Socket.SSL.error
+
+  defp error(web(socket: socket)) do
+    Module.concat(elem(socket, 0), Error)
+  end
+
+  @type packet :: { :text, String.t } |
+                  { :binary, binary } |
+                  { :fragmented, :text | :binary | :continuation | :end, binary } |
+                  :close |
+                  { :close, atom, binary } |
+                  { :ping, binary } |
+                  { :pong, binary }
+
   def recv(web(socket: socket, version: 13) = self) do
     case socket.recv(2) do
       # a non fragmented message packet
@@ -481,7 +504,7 @@ defmodule Socket.Web do
         raise RuntimeError, message: "protocol error"
 
       { :error, code } ->
-        raise Socket.Error, code: code
+        raise error(self), code: code
     end
   end
 
@@ -549,7 +572,7 @@ defmodule Socket.Web do
         :ok
 
       { :error, code } ->
-        raise Socket.Error, code: code
+        raise error(self), code: code
     end
   end
 

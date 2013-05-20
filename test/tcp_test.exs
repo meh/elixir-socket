@@ -10,15 +10,15 @@ defmodule TcpTest do
   end
 
   test :connect! do
-    assert_raise Socket.Error, fn ->
+    assert_raise Socket.TCP.Error, fn ->
       Socket.TCP.connect!('127.0.0.1', 1) == { :error, :econnrefused }
     end
 
-    assert_raise Socket.Error, fn ->
+    assert_raise Socket.TCP.Error, fn ->
       Socket.TCP.connect!("127.0.0.1", 1) == { :error, :econnrefused }
     end
 
-    assert_raise Socket.Error, fn ->
+    assert_raise Socket.TCP.Error, fn ->
       Socket.TCP.connect!({127,0,0,1}, 1) == { :error, :econnrefused }
     end
   end

@@ -7,12 +7,6 @@
 #  0. You just DO WHAT THE FUCK YOU WANT TO.
 
 defmodule Socket do
-  defexception Error, code: nil do
-    def message(self) do
-      to_binary(:inet.format_error(self.code))
-    end
-  end
-
   @type t :: port | record
 
   @doc false

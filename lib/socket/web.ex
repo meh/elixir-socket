@@ -30,6 +30,10 @@ defmodule Socket.Web do
     :base64.encode(:crypto.sha(value <> "258EAFA5-E914-47DA-95CA-C5AB0DC85B11"))
   end
 
+  def connect({ address, port }) do
+    connect(address, port, [])
+  end
+
   def connect({ address, port }, options) do
     connect(address, port, options)
   end

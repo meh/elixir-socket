@@ -1,9 +1,8 @@
 Elixir sockets made decent
 ==========================
-
-This library wraps `gen_tcp`, `gen_udp` and `gen_sctp` in a strictly passive
-mode (no events sent to processes) and implements smart garbage collection (if
-sockets aren't referenced anywhere, they are closed).
+This library wraps `gen_tcp`, `gen_udp` and `gen_sctp`, `ssl` and implements
+websockets, it also implements smart garbage collection (if sockets aren't
+referenced anywhere, they are closed).
 
 Examples
 --------

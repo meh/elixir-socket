@@ -53,14 +53,11 @@ defmodule Socket.Web do
       MatchError ->
         { :error, "malformed handshake" }
 
-      RuntimeError[message: msg] ->
-        { :error, msg }
+      e in [RuntimeError] ->
+        { :error, e.message }
 
-      Socket.TCP.Error[code: code] ->
-        { :error, code }
-
-      Socket.SSL.Error[code: code] ->
-        { :error, code }
+      e in [Socket.TCP.Error, Socket.SSL.Error] ->
+        { :error, e.code }
     end
   end
 
@@ -191,11 +188,8 @@ defmodule Socket.Web do
     try do
       { :ok, accept!(self) }
     rescue
-      Socket.TCP.Error[code: code] ->
-        { :error, code }
-
-      Socket.SSL.Error[code: code] ->
-        { :error, code }
+      e in [Socket.TCP.Error, Socket.SSL.Error] ->
+        { :error, e.code }
     end
   end
 
@@ -206,14 +200,11 @@ defmodule Socket.Web do
       MatchError ->
         { :error, "malformed handshake" }
 
-      RuntimeError[message: msg] ->
-        { :error, msg }
+      e in [RuntimeError] ->
+        { :error, e.message }
 
-      Socket.TCP.Error[code: code] ->
-        { :error, code }
-
-      Socket.SSL.Error[code: code] ->
-        { :error, code }
+      e in [Socket.TCP.Error, Socket.SSL.Error] ->
+        { :error, e.code }
     end
   end
 

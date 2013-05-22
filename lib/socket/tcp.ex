@@ -54,14 +54,14 @@ defmodule Socket.TCP do
 
   @type t :: record
 
-  defrecordp :socket, port: nil, reference: nil
+  defrecordp :tcp, socket: nil, reference: nil
 
   @doc """
   Wrap an existing socket.
   """
   @spec wrap(port) :: t
   def wrap(port) do
-    socket(port: port)
+    tcp(socket: port)
   end
 
   @doc """
@@ -105,7 +105,7 @@ defmodule Socket.TCP do
           Finalizer.define({ :close, :tcp, sock }, Process.whereis(Socket.Manager))
         end
 
-        { :ok, socket(port: sock, reference: reference) }
+        { :ok, tcp(socket: sock, reference: reference) }
 
       error ->
         error
@@ -187,7 +187,7 @@ defmodule Socket.TCP do
           Finalizer.define({ :close, :tcp, sock }, Process.whereis(Socket.Manager))
         end
 
-        { :ok, socket(port: sock, reference: reference) }
+        { :ok, tcp(socket: sock, reference: reference) }
 
       error ->
         error
@@ -236,7 +236,7 @@ defmodule Socket.TCP do
   """
   @spec accept(t)            :: { :ok, t } | { :error, Error.t }
   @spec accept(Keyword.t, t) :: { :ok, t } | { :error, Error.t }
-  def accept(options // [], socket(port: sock)) do
+  def accept(options // [], tcp(socket: sock)) do
     options = Keyword.put_new(options, :mode, :passive)
 
     case :gen_tcp.accept(sock, options[:timeout] || :infinity) do
@@ -254,7 +254,7 @@ defmodule Socket.TCP do
         end
 
         if result == :ok do
-          { :ok, socket(port: sock, reference: reference) }
+          { :ok, tcp(socket: sock, reference: reference) }
         else
           result
         end
@@ -284,16 +284,16 @@ defmodule Socket.TCP do
   Set the process which will receive the messages.
   """
   @spec process(pid, t) :: :ok | { :error, :closed | :not_owner | Error.t }
-  def process(pid, socket(port: port)) do
-    :gen_tcp.controlling_process(port, pid)
+  def process(pid, tcp(socket: sock)) do
+    :gen_tcp.controlling_process(sock, pid)
   end
 
   @doc """
   Set the process which will receive the messages, raising if an error occurs.
   """
   @spec process!(pid, t) :: :ok | no_return
-  def process!(pid, socket(port: port)) do
-    case :gen_tcp.controlling_process(port, pid) do
+  def process!(pid, tcp(socket: sock)) do
+    case :gen_tcp.controlling_process(sock, pid) do
       :ok ->
         :ok
 
@@ -312,8 +312,8 @@ defmodule Socket.TCP do
   Set options of the socket.
   """
   @spec options(Keyword.t, t) :: :ok | { :error, Error.t }
-  def options(opts, socket(port: port)) do
-    :inet.setopts(port, arguments(opts))
+  def options(opts, tcp(socket: sock)) do
+    :inet.setopts(sock, arguments(opts))
   end
 
   @doc """
@@ -334,16 +334,16 @@ defmodule Socket.TCP do
   Return the local address and port.
   """
   @spec local(t) :: { :ok, { :inet.ip_address, :inet.port_number } } | { :error, Error.t }
-  def local(socket(port: port)) do
-    :inet.sockname(port)
+  def local(tcp(socket: sock)) do
+    :inet.sockname(sock)
   end
 
   @doc """
   Return the local address and port, raising if an error occurs.
   """
   @spec local!(t) :: { :inet.ip_address, :inet.port_number } | no_return
-  def local!(socket(port: port)) do
-    case :inet.sockname(port) do
+  def local!(tcp(socket: sock)) do
+    case :inet.sockname(sock) do
       { :ok, result } ->
         result
 
@@ -356,16 +356,16 @@ defmodule Socket.TCP do
   Return the remote address and port.
   """
   @spec remote(t) :: { :ok, { :inet.ip_address, :inet.port_number } } | { :error, Error.t }
-  def remote(socket(port: port)) do
-    :inet.peername(port)
+  def remote(tcp(socket: sock)) do
+    :inet.peername(sock)
   end
 
   @doc """
   Return the remote address and port, raising if an error occurs.
   """
   @spec remote!(t) :: { :inet.ip_address, :inet.port_number } | no_return
-  def remote!(socket(port: port)) do
-    case :inet.peername(port) do
+  def remote!(tcp(socket: sock)) do
+    case :inet.peername(sock) do
       { :ok, result } ->
         result
 
@@ -378,8 +378,8 @@ defmodule Socket.TCP do
   Send a packet through the socket.
   """
   @spec send(iodata, t) :: :ok | { :error, Error.t }
-  def send(value, socket(port: port)) do
-    :gen_tcp.send(port, value)
+  def send(value, tcp(socket: sock)) do
+    :gen_tcp.send(sock, value)
   end
 
   @doc """
@@ -422,8 +422,8 @@ defmodule Socket.TCP do
   Receive a packet from the socket with the given length and options.
   """
   @spec recv(non_neg_integer, Keyword.t, t) :: { :ok, binary | char_list } | { :error, Error.t }
-  def recv(length, options, socket(port: port)) do
-    case :gen_tcp.recv(port, length, options[:timeout] || :infinity) do
+  def recv(length, options, tcp(socket: sock)) do
+    case :gen_tcp.recv(sock, length, options[:timeout] || :infinity) do
       { :ok, _ } = ok ->
         ok
 
@@ -484,7 +484,7 @@ defmodule Socket.TCP do
   Shutdown the socket for the given mode.
   """
   @spec shutdown(:read | :write | :both, t) :: :ok | { :error, Error.t }
-  def shutdown(how, socket(port: sock)) do
+  def shutdown(how, tcp(socket: sock)) do
     :gen_tcp.shutdown(sock, case how do
       :read  -> :read
       :write -> :write
@@ -511,16 +511,16 @@ defmodule Socket.TCP do
   closed automatically when it's not referenced by anything.
   """
   @spec close(t) :: :ok
-  def close(socket(port: port)) do
-    :gen_tcp.close(port)
+  def close(tcp(socket: sock)) do
+    :gen_tcp.close(sock)
   end
 
   @doc """
   Get the underlying port wrapped by the socket.
   """
   @spec to_port(t) :: port
-  def to_port(socket(port: port)) do
-    port
+  def to_port(tcp(socket: sock)) do
+    sock
   end
 
   @doc """

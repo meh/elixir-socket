@@ -44,14 +44,14 @@ defmodule Socket.UDP do
 
   @type t :: record
 
-  defrecordp :socket, port: nil, reference: nil
+  defrecordp :udp, socket: nil, reference: nil
 
   @doc """
   Wrap an existing socket.
   """
   @spec wrap(port) :: t
   def wrap(port) do
-    socket(port: port)
+    udp(socket: port)
   end
 
   @doc """
@@ -88,7 +88,7 @@ defmodule Socket.UDP do
           Finalizer.define({ :close, :udp, sock }, Process.whereis(Socket.Manager))
         end
 
-        { :ok, socket(port: sock, reference: reference) }
+        { :ok, udp(socket: sock, reference: reference) }
 
       error ->
         error
@@ -136,16 +136,16 @@ defmodule Socket.UDP do
   Set the process which will receive the messages.
   """
   @spec process(pid, t) :: :ok | { :error, :closed | :not_owner | Error.t }
-  def process(pid, socket(port: port)) do
-    :gen_udp.controlling_process(port, pid)
+  def process(pid, udp(socket: sock)) do
+    :gen_udp.controlling_process(sock, pid)
   end
 
   @doc """
   Set the process which will receive the messages, raising if an error occurs.
   """
   @spec process!(pid, t) :: :ok | no_return
-  def process!(pid, socket(port: port)) do
-    case :gen_udp.controlling_process(port, pid) do
+  def process!(pid, udp(socket: sock)) do
+    case :gen_udp.controlling_process(sock, pid) do
       :ok ->
         :ok
 
@@ -164,8 +164,8 @@ defmodule Socket.UDP do
   Set options of the socket.
   """
   @spec options(Keyword.t, t) :: :ok | { :error, Error.t }
-  def options(opts, socket(port: port)) do
-    :inet.setopts(port, arguments(opts))
+  def options(opts, udp(socket: sock)) do
+    :inet.setopts(sock, arguments(opts))
   end
 
   @doc """
@@ -186,7 +186,7 @@ defmodule Socket.UDP do
   Send a packet to the given address and port.
   """
   @spec send(String.t | :inet.ip_address, :inet.port_number, iodata, t) :: :ok | { :error, Error.t }
-  def send(address, port, value, socket(port: sock)) do
+  def send(address, port, value, udp(socket: sock)) do
     if is_binary(address) do
       address = binary_to_list(address)
     end
@@ -265,8 +265,8 @@ defmodule Socket.UDP do
   Receive a packet from the socket, with the given length and options.
   """
   @spec recv(non_neg_integer, Keyword.t, t) :: { :ok, { iodata, Association.t } } | { :error, Error.t }
-  def recv(length, options, socket(port: port) = self) do
-    case :gen_udp.recv(port, length, options[:timeout] || :infinity) do
+  def recv(length, options, udp(socket: sock) = self) do
+    case :gen_udp.recv(sock, length, options[:timeout] || :infinity) do
       { :ok, { address, port, data } } ->
         { :ok, { data, Association.new(self, address, port) } }
 
@@ -325,16 +325,16 @@ defmodule Socket.UDP do
   closed automatically when it's not referenced by anything.
   """
   @spec close(t) :: :ok
-  def close(socket(port: port)) do
-    :gen_udp.close(port)
+  def close(udp(socket: sock)) do
+    :gen_udp.close(sock)
   end
 
   @doc """
   Get the underlying port wrapped by the socket.
   """
   @spec to_port(t) :: port
-  def to_port(socket(port: port)) do
-    port
+  def to_port(udp(socket: sock)) do
+    sock
   end
 
   @doc """

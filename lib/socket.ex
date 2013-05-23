@@ -11,6 +11,25 @@ defmodule Socket do
 
   @type t :: port | record
 
+  @doc """
+  Create a socket connecting to somewhere using an URI.
+
+  ## Supported URIs
+
+  * `tcp://host:port` for Socket.TCP
+  * `ssl://host:port` for Socket.SSL
+  * `ws://host:port/path` for Socket.Web (using Socket.TCP)
+  * `wss://host:port/path` for Socket.Web (using Socket.SSL)
+  * `udp://host:port` for Socket:UDP
+
+  ## Example
+
+      { :ok, client } = Sockect.connect "tcp://google.com:80"
+      client.send "GET / HTTP/1.1\r\n"
+      client.recv
+
+  """
+  @spec connect(String.t | URI.Info.t) :: { :ok, Socket.t } | { :error, any }
   def connect(uri) when is_list(uri) or is_binary(uri) do
     connect(URI.parse(uri))
   end
@@ -31,6 +50,11 @@ defmodule Socket do
     Socket.Web.connect(host, port, path, secure: true)
   end
 
+  @doc """
+  Create a socket connecting to somewhere using an URI, raising if an error
+  occurs, see `connect`.
+  """
+  @spec connect!(String.t | URI.Info.t) :: Socket.t | no_return
   def connect!(uri) when is_list(uri) or is_binary(uri) do
     connect!(URI.parse(uri))
   end
@@ -51,6 +75,28 @@ defmodule Socket do
     Socket.Web.connect!(host, port, path, secure: true)
   end
 
+  @doc """
+  Create a socket listening somewhere using an URI.
+
+  ## Supported URIs
+
+  If host is `*` it will be converted to `0.0.0.0`.
+
+  * `tcp://host:port` for Socket.TCP
+  * `ssl://host:port` for Socket.SSL
+  * `ws://host:port/path` for Socket.Web (using Socket.TCP)
+  * `wss://host:port/path` for Socket.Web (using Socket.SSL)
+  * `udp://host:port` for Socket:UDP
+
+  ## Example
+
+      { :ok, server } = Sockect.listen "tcp://*:1337"
+      client = server.accept!(packet: :line)
+      client.send(client.recv)
+      client.close
+
+  """
+  @spec listen(String.t | URI.Info.t) :: { :ok, Socket.t } | { :error, any }
   def listen(uri) when is_list(uri) or is_binary(uri) do
     listen(URI.parse(uri))
   end
@@ -71,6 +117,11 @@ defmodule Socket do
     Socket.Web.listen(port, secure: true, local: [address: if(host == "*", do: "0.0.0.0", else: host)])
   end
 
+  @doc """
+  Create a socket listening somewhere using an URI, raising if an error occurs,
+  see `listen`.
+  """
+  @spec listen!(String.t | URI.Info.t) :: Socket.t | no_return
   def listen!(uri) when is_list(uri) or is_binary(uri) do
     listen!(URI.parse(uri))
   end

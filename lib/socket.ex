@@ -51,6 +51,46 @@ defmodule Socket do
     Socket.Web.connect!(host, port, path, secure: true)
   end
 
+  def listen(uri) when is_list(uri) or is_binary(uri) do
+    listen(URI.parse(uri))
+  end
+
+  def listen(URI.Info[scheme: "tcp", host: host, port: port]) do
+    Socket.TCP.listen(port, local: [address: if(host == "*", do: "0.0.0.0", else: host)])
+  end
+
+  def listen(URI.Info[scheme: "ssl", host: host, port: port]) do
+    Socket.SSL.listen(port, local: [address: if(host == "*", do: "0.0.0.0", else: host)])
+  end
+
+  def listen(URI.Info[scheme: "ws", host: host, port: port]) do
+    Socket.Web.listen(port, local: [address: if(host == "*", do: "0.0.0.0", else: host)])
+  end
+
+  def listen(URI.Info[scheme: "wss", host: host, port: port]) do
+    Socket.Web.listen(port, secure: true, local: [address: if(host == "*", do: "0.0.0.0", else: host)])
+  end
+
+  def listen!(uri) when is_list(uri) or is_binary(uri) do
+    listen!(URI.parse(uri))
+  end
+
+  def listen!(URI.Info[scheme: "tcp", host: host, port: port]) do
+    Socket.TCP.listen!(port, local: [address: if(host == "*", do: "0.0.0.0", else: host)])
+  end
+
+  def listen!(URI.Info[scheme: "ssl", host: host, port: port]) do
+    Socket.SSL.listen!(port, local: [address: if(host == "*", do: "0.0.0.0", else: host)])
+  end
+
+  def listen!(URI.Info[scheme: "ws", host: host, port: port]) do
+    Socket.Web.listen!(port, local: [address: if(host == "*", do: "0.0.0.0", else: host)])
+  end
+
+  def listen!(URI.Info[scheme: "wss", host: host, port: port]) do
+    Socket.Web.listen!(port, secure: true, local: [address: if(host == "*", do: "0.0.0.0", else: host)])
+  end
+
   @doc false
   def arguments(options) do
     args = []

@@ -7,7 +7,49 @@
 #  0. You just DO WHAT THE FUCK YOU WANT TO.
 
 defmodule Socket do
+  @on_load :uris
+
   @type t :: port | record
+
+  def connect(uri) when is_list(uri) or is_binary(uri) do
+    connect(URI.parse(uri))
+  end
+
+  def connect(URI.Info[scheme: "tcp", host: host, port: port]) do
+    Socket.TCP.connect(host, port)
+  end
+
+  def connect(URI.Info[scheme: "ssl", host: host, port: port]) do
+    Socket.SSL.connect(host, port)
+  end
+
+  def connect(URI.Info[scheme: "ws", host: host, port: port, path: path]) do
+    Socket.Web.connect(host, port, path)
+  end
+
+  def connect(URI.Info[scheme: "wss", host: host, port: port, path: path]) do
+    Socket.Web.connect(host, port, path, secure: true)
+  end
+
+  def connect!(uri) when is_list(uri) or is_binary(uri) do
+    connect!(URI.parse(uri))
+  end
+
+  def connect!(URI.Info[scheme: "tcp", host: host, port: port]) do
+    Socket.TCP.connect!(host, port)
+  end
+
+  def connect!(URI.Info[scheme: "ssl", host: host, port: port]) do
+    Socket.SSL.connect!(host, port)
+  end
+
+  def connect!(URI.Info[scheme: "ws", host: host, port: port, path: path]) do
+    Socket.Web.connect!(host, port, path)
+  end
+
+  def connect!(URI.Info[scheme: "wss", host: host, port: port, path: path]) do
+    Socket.Web.connect!(host, port, path, secure: true)
+  end
 
   @doc false
   def arguments(options) do
@@ -66,5 +108,11 @@ defmodule Socket do
     end
 
     args
+  end
+
+  defp uris do
+    Enum.each [URI.WS, URI.WSS], Code.ensure_loaded(&1)
+
+    :ok
   end
 end

@@ -177,7 +177,13 @@ defmodule Socket.Web do
   end
 
   def listen!(port, options) do
-    web(socket: Socket.TCP.listen!(port, options))
+    mod = if options[:secure] do
+      Socket.SSL
+    else
+      Socket.TCP
+    end
+
+    web(socket: mod.listen!(port, options))
   end
 
   def accept(web(key: nil) = self) do

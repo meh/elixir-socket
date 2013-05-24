@@ -15,25 +15,6 @@ defmodule Socket.SSL do
 
   When creating a socket you can pass a serie of options to use for it.
 
-  * `:as` sets the kind of value returned by recv, either `:binary` or `:list`,
-    the default is `:binary`
-  * `:mode` can be either `:passive` or `:active`, default is `:passive`
-  * `:automatic` tells it whether to use smart garbage collection or not, when
-    passive the default is `true`, when active the default is `false`
-  * `:local` must be a keyword list
-    - `:address` the local address to use
-    - `:port` the local port to use
-    - `:fd` an already opened file descriptor to use
-  * `:backlog` sets the listen backlog
-  * `:watermark` must be a keyword list
-    - `:low` defines the `:low_watermark`, see `inet:setopts`
-    - `:high` defines the `:high_watermark`, see `inet:setopts`
-  * `:version` sets the IP version to use
-  * `:options` must be a list of atoms
-    - `:keepalive` sets `SO_KEEPALIVE`
-    - `:nodelay` sets `TCP_NODELAY`
-  * `:packet` see `inet:setopts`
-  * `:size` sets the max length of the packet body, see `inet:setopts`
   * `:cert` can either be an encoded certificate or `[path:
     "path/to/certificate"]`
   * `:key` can either be an encoded certificate, `[path: "path/to/key]`, `[rsa:
@@ -46,6 +27,8 @@ defmodule Socket.SSL do
   * `:password` the password to use to decrypt certificates
   * `:renegotiation` if it's set to `:secure` renegotiation will be secured
   * `:ciphers` is a list of ciphers to allow
+
+  You can also pass TCP options.
   """
 
   @doc """

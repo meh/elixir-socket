@@ -7,13 +7,59 @@
 #  0. You just DO WHAT THE FUCK YOU WANT TO.
 
 defmodule Socket.Web do
+  @moduledoc %B"""
+  This module implements RFC 6455 WebSockets.
+  """
+
   use    Bitwise
   import Kernel, except: [length: 1]
 
   @type t :: record
 
+  @type error :: Socket.TCP.error | Socket.SSL.error
+
+  @type packet :: { :text, String.t } |
+                  { :binary, binary } |
+                  { :fragmented, :text | :binary | :continuation | :end, binary } |
+                  :close |
+                  { :close, atom, binary } |
+                  { :ping, binary } |
+                  { :pong, binary }
+
+  Enum.each [ text: 0x1, binary: 0x2, close: 0x8, ping: 0x9, pong: 0xA ], fn { name, code } ->
+    defp :opcode, [name], [], do: code
+    defp :opcode, [code], [], do: name
+  end
+
+  Enum.each [ normal: 1000, going_away: 1001, protocol_error: 1002, unsupported_data: 1003,
+              reserved: 1004, no_status_received: 1005, abnormal: 1006, invalid_payload: 1007,
+              policy_violation: 1008, message_too_big: 1009, mandatory_extension: 1010,
+              internal_error: 1011, handshake: 1015 ], fn { name, code } ->
+    defp :close_code, [name], [], do: code
+    defp :close_code, [code], [], do: name
+  end
+
+  defmacrop known?(n) do
+    quote do
+      unquote(n) in [0x1, 0x2, 0x8, 0x9, 0xA]
+    end
+  end
+
+  defmacrop data?(n) do
+    quote do
+      unquote(n) in 0x1 .. 0x7 or unquote(n) in [:text, :binary]
+    end
+  end
+
+  defmacrop control?(n) do
+    quote do
+      unquote(n) in 0x8 .. 0xF or unquote(n) in [:close, :ping, :pong]
+    end
+  end
+
   defrecordp :web, socket: nil, version: nil, path: nil, origin: nil, key: nil, mask: nil
 
+  @spec headers([{ name :: String.t, value :: String.t }], Socket.t) :: [{ name :: String.t, value :: String.t }]
   defp headers(acc, socket) do
     case socket.recv! do
       "\r\n" ->
@@ -26,14 +72,33 @@ defmodule Socket.Web do
     end
   end
 
+  @spec key(String.t) :: String.t
   defp key(value) do
     :base64.encode(:crypto.sha(value <> "258EAFA5-E914-47DA-95CA-C5AB0DC85B11"))
   end
 
+  @spec error(t) :: module
+  defp error(web(socket: socket)) do
+    Module.concat(elem(socket, 0), Error)
+  end
+
+  @doc """
+  Connects to the given address or { address, port } tuple.
+  """
+  @spec connect({ Socket.Address.t, :inet.port_number }) :: { :ok, t } | { :error, error }
   def connect({ address, port }) do
     connect(address, port, [])
   end
 
+  def connect(address) do
+    connnect(address, [])
+  end
+
+  @doc """
+  Connect to the given address or { address, port } tuple with the given
+  options or address and port.
+  """
+  @spec connect({ Socket.Address.t, :inet.port_number } | Socket.Address.t, Keyword.t | :inet.port_number) :: { :ok, t } | { :error, error }
   def connect({ address, port }, options) do
     connect(address, port, options)
   end
@@ -46,6 +111,19 @@ defmodule Socket.Web do
     connect(address, port, [])
   end
 
+  @doc """
+  Connect to the given address, port and options.
+
+  ## Options
+
+  `:path` sets the path to give the server, `/` by default
+  `:origin` sets the Origin header, this is optional
+  `:key` is the key used for the handshake, this is optional
+
+  You can also pass TCP or SSL options, depending if you're using secure
+  websockets or not.
+  """
+  @spec connect(Socket.Address.t, :inet.port_number, Keyword.t) :: { :ok, t } | { :error, error }
   def connect(address, port, options) do
     try do
       { :ok, connect!(address, port, options) }
@@ -61,10 +139,24 @@ defmodule Socket.Web do
     end
   end
 
+  @doc """
+  Connects to the given address or { address, port } tuple, raising if an error
+  occurs.
+  """
+  @spec connect!({ Socket.Address.t, :inet.port_number }) :: t | no_return
   def connect!({ address, port }) do
     connect!(address, port, [])
   end
 
+  def connect!(address) do
+    connect!(address, [])
+  end
+
+  @doc """
+  Connect to the given address or { address, port } tuple with the given
+  options or address and port, raising if an error occurs.
+  """
+  @spec connect!({ Socket.Address.t, :inet.port_number } | Socket.Address.t, Keyword.t | :inet.port_number) :: t | no_return
   def connect!({ address, port }, options) do
     connect!(address, port, options)
   end
@@ -77,6 +169,19 @@ defmodule Socket.Web do
     connect!(address, port, [])
   end
 
+  @doc """
+  Connect to the given address, port and options, raising if an error occurs.
+
+  ## Options
+
+  `:path` sets the path to give the server, `/` by default
+  `:origin` sets the Origin header, this is optional
+  `:key` is the key used for the handshake, this is optional
+
+  You can also pass TCP or SSL options, depending if you're using secure
+  websockets or not.
+  """
+  @spec connect!(Socket.Address.t, :inet.port_number, Keyword.t) :: t | no_return
   def connect!(address, port, options) do
     mod = if options[:secure] do
       Socket.SSL
@@ -128,10 +233,18 @@ defmodule Socket.Web do
     web(socket: client, version: 13, path: path, origin: origin, key: key, mask: true)
   end
 
+  @doc """
+  Listens on the default port (80).
+  """
+  @spec listen :: { :ok, t } | { :error, error }
   def listen do
     listen([])
   end
 
+  @doc """
+  Listens on the given port or with the given options.
+  """
+  @spec listen(:inet.port_number | Keyword.t) :: { :ok, t } | { :error, error }
   def listen(port) when is_integer(port) do
     listen(port, [])
   end
@@ -144,6 +257,17 @@ defmodule Socket.Web do
     end
   end
 
+  @doc """
+  Listens on the given port with the given options.
+
+  ## Options
+
+  `:secure` when true it will use SSL sockets
+
+  You can also pass TCP or SSL options, depending if you're using secure
+  websockets or not.
+  """
+  @spec listen(:inet.port_number, Keyword.t) :: { :ok, t } | { :error, error }
   def listen(port, options) do
     mod = if options[:secure] do
       Socket.SSL
@@ -160,10 +284,19 @@ defmodule Socket.Web do
     end
   end
 
+  @doc """
+  Listens on the default port (80), raising if an error occurs.
+  """
+  @spec listen! :: t | no_return
   def listen! do
     listen!([])
   end
 
+  @doc """
+  Listens on the given port or with the given options, raising if an error
+  occurs.
+  """
+  @spec listen!(:inet.port_number | Keyword.t) :: t | no_return
   def listen!(port) when is_integer(port) do
     listen!(port, [])
   end
@@ -176,6 +309,17 @@ defmodule Socket.Web do
     end
   end
 
+  @doc """
+  Listens on the given port with the given options, raising if an error occurs.
+
+  ## Options
+
+  `:secure` when true it will use SSL sockets
+
+  You can also pass TCP or SSL options, depending if you're using secure
+  websockets or not.
+  """
+  @spec listen!(:inet.port_number, Keyword.t) :: t | no_return
   def listen!(port, options) do
     mod = if options[:secure] do
       Socket.SSL
@@ -186,6 +330,15 @@ defmodule Socket.Web do
     web(socket: mod.listen!(port, options))
   end
 
+  @doc """
+  If you're calling this on a listening socket, it accepts a new client
+  connection.
+
+  If you're calling this on a client socket, it finalizes the acception
+  handshake, this separation is done because then you can verify the client can
+  connect based on Origin header, path and other things.
+  """
+  @spec accept(t) :: { :ok, t } | { :error, error }
   def accept(web(key: nil) = self) do
     accept([], self)
   end
@@ -199,6 +352,10 @@ defmodule Socket.Web do
     end
   end
 
+  @doc """
+  Accept a client connection from the listening socket with the passed options.
+  """
+  @spec accept(Keyword.t, t) :: { :ok, t } | { :error, error }
   def accept(options, web(key: nil) = self) do
     try do
       { :ok, accept!(options, self) }
@@ -214,6 +371,17 @@ defmodule Socket.Web do
     end
   end
 
+  @doc """
+  If you're calling this on a listening socket, it accepts a new client
+  connection.
+
+  If you're calling this on a client socket, it finalizes the acception
+  handshake, this separation is done because then you can verify the client can
+  connect based on Origin header, path and other things.
+
+  In case of error, it raises.
+  """
+  @spec accept!(t) :: t | no_return
   def accept!(web(key: nil) = self) do
     accept!([], self)
   end
@@ -230,8 +398,13 @@ defmodule Socket.Web do
       "\r\n"])
   end
 
-  def accept!(_options, web(socket: socket, key: nil)) do
-    client = socket.accept!
+  @doc """
+  Accept a client connection from the listening socket with the passed options,
+  raising if an error occurs.
+  """
+  @spec accept!(Keyword.t, t) :: t | no_return
+  def accept!(options, web(socket: socket, key: nil)) do
+    client = socket.accept!(options)
     client.options!(packet: :line)
 
     [_, path] = Regex.run %r"^GET (/.*?) HTTP/1.1", client.recv!
@@ -254,53 +427,39 @@ defmodule Socket.Web do
     web(socket: client, origin: headers["origin"], path: path, version: 13, key: headers["sec-websocket-key"])
   end
 
+  @doc """
+  Return the local address and port.
+  """
+  @spec local(t) :: { :ok, { :inet.ip_address, :inet.port_number } } | { :error, error }
   def local(web(socket: sock)) do
     sock.local
   end
 
+  @doc """
+  Return the local address and port, raising if an error occurs.
+  """
+  @spec local!(t) :: { :inet.ip_address, :inet.port_number } | no_return
   def local!(web(socket: socket)) do
     socket.local!
   end
 
+  @doc """
+  Return the remote address and port.
+  """
+  @spec remote(t) :: { :ok, { :inet.ip_address, :inet.port_number } } | { :error, error }
   def remote(web(socket: socket)) do
     socket.remote
   end
 
+  @doc """
+  Return the remote address and port, raising if an error occurs.
+  """
+  @spec remote!(t) :: { :inet.ip_address, :inet.port_number } | no_return
   def remote!(web(socket: socket)) do
     socket.remote!
   end
 
-  Enum.each [ text: 0x1, binary: 0x2, close: 0x8, ping: 0x9, pong: 0xA ], fn { name, code } ->
-    defp :opcode, [name], [], do: code
-    defp :opcode, [code], [], do: name
-  end
-
-  Enum.each [ normal: 1000, going_away: 1001, protocol_error: 1002, unsupported_data: 1003,
-              reserved: 1004, no_status_received: 1005, abnormal: 1006, invalid_payload: 1007,
-              policy_violation: 1008, message_too_big: 1009, mandatory_extension: 1010,
-              internal_error: 1011, handshake: 1015 ], fn { name, code } ->
-    defp :close_code, [name], [], do: code
-    defp :close_code, [code], [], do: name
-  end
-
-  defmacrop known?(n) do
-    quote do
-      unquote(n) in [0x1, 0x2, 0x8, 0x9, 0xA]
-    end
-  end
-
-  defmacrop data?(n) do
-    quote do
-      unquote(n) in 0x1 .. 0x7 or unquote(n) in [:text, :binary]
-    end
-  end
-
-  defmacrop control?(n) do
-    quote do
-      unquote(n) in 0x8 .. 0xF or unquote(n) in [:close, :ping, :pong]
-    end
-  end
-
+  @spec mask(binary) :: { integer, binary }
   defp mask(data) do
     case :crypto.strong_rand_bytes(4) do
       << key :: 32 >> ->
@@ -308,10 +467,12 @@ defmodule Socket.Web do
     end
   end
 
+  @spec mask(integer, binary) :: { integer, binary }
   defp mask(key, data) do
     { key, unmask(key, data) }
   end
 
+  @spec unmask(integer, binary) :: binary
   defp unmask(key, data) do
     unmask(key, data, <<>>)
   end
@@ -345,6 +506,7 @@ defmodule Socket.Web do
     acc
   end
 
+  @spec recv(boolean, non_neg_integer, t) :: { :ok, binary } | { :error, error }
   defp recv(mask, length, web(socket: socket, version: 13)) do
     length = cond do
       length == 127 ->
@@ -412,20 +574,10 @@ defmodule Socket.Web do
     end
   end
 
-  @type error :: Socket.TCP.error | Socket.SSL.error
-
-  defp error(web(socket: socket)) do
-    Module.concat(elem(socket, 0), Error)
-  end
-
-  @type packet :: { :text, String.t } |
-                  { :binary, binary } |
-                  { :fragmented, :text | :binary | :continuation | :end, binary } |
-                  :close |
-                  { :close, atom, binary } |
-                  { :ping, binary } |
-                  { :pong, binary }
-
+  @doc """
+  Receive a packet from the websocket.
+  """
+  @spec recv(t) :: { :ok, packet } | { :error, error }
   def recv(web(socket: socket, version: 13) = self) do
     case socket.recv(2) do
       # a non fragmented message packet
@@ -496,6 +648,10 @@ defmodule Socket.Web do
     end
   end
 
+  @doc """
+  Receive a packet from the websocket, raising if an error occurs.
+  """
+  @spec recv!(t) :: packet | no_return
   def recv!(self) do
     case recv(self) do
       { :ok, packet } ->
@@ -509,6 +665,7 @@ defmodule Socket.Web do
     end
   end
 
+  @spec length(binary) :: binary
   defp length(data) when byte_size(data) <= 125 do
     << byte_size(data) :: 7 >>
   end
@@ -521,6 +678,7 @@ defmodule Socket.Web do
     << 127 :: 7, byte_size(data) :: 64 >>
   end
 
+  @spec forge(nil | true | integer, binary) :: binary
   defp forge(nil, data) do
     << 0 :: 1, length(data) :: bitstring, data :: bitstring >>
   end
@@ -537,6 +695,11 @@ defmodule Socket.Web do
     << 1 :: 1, length(data) :: bitstring, key :: 32, data :: bitstring >>
   end
 
+  @doc """
+  Send a packet to the websocket.
+  """
+  @spec send(packet, t)            :: :ok | { :error, error }
+  @spec send(packet, Keyword.t, t) :: :ok | { :error, error }
   def send(packet, options // [], self)
 
   def send({ opcode, data }, options, web(socket: socket, version: 13, mask: mask)) when data?(opcode) and opcode != :close do
@@ -567,6 +730,11 @@ defmodule Socket.Web do
                    forge(options[:mask] || mask, data) :: binary >>)
   end
 
+  @doc """
+  Send a packet to the websocket, raising if an error occurs.
+  """
+  @spec send!(packet, t)            :: :ok | no_return
+  @spec send!(packet, Keyword.t, t) :: :ok | no_return
   def send!(packet, options // [], self) do
     case send(packet, options, self) do
       :ok ->
@@ -577,6 +745,11 @@ defmodule Socket.Web do
     end
   end
 
+  @doc """
+  Send a ping request with the optional cookie.
+  """
+  @spec ping(t)         :: :ok | { :error, error }
+  @spec ping(binary, t) :: :ok | { :error, error }
   def ping(cookie // :crypt.rand_bytes(32), self) do
     case send({ :ping, cookie }, self) do
       :ok ->
@@ -587,20 +760,38 @@ defmodule Socket.Web do
     end
   end
 
+  @doc """
+  Send a ping request with the optional cookie, raising if an error occurs.
+  """
+  @spec ping!(t)         :: :ok | no_return
+  @spec ping!(binary, t) :: :ok | no_return
   def ping!(cookie // :crypt.rand_bytes(32), self) do
     send!({ :ping, cookie }, self)
 
     cookie
   end
 
+  @doc """
+  Send a pong with the given (and received) ping cookie.
+  """
+  @spec pong(binary, t) :: :ok | { :error, error }
   def pong(cookie, self) do
     send({ :pong, cookie }, self)
   end
 
+  @doc """
+  Send a pong with the given (and received) ping cookie, raising if an error
+  occurs.
+  """
+  @spec pong!(binary, t) :: :ok | no_return
   def pong!(cookie, self) do
     send!({ :pong, cookie }, self)
   end
 
+  @doc """
+  Close the socket when a close request has been received.
+  """
+  @spec close(t) :: :ok | { :error, error }
   def close(web(socket: socket, version: 13)) do
     socket.send(<< 1              :: 1,
                    0              :: 3,
@@ -608,6 +799,12 @@ defmodule Socket.Web do
                    forge(nil, <<>>) :: binary >>)
   end
 
+  @doc """
+  Close the socket sending a close request, unless `:wait` is set to `false` it
+  blocks until the close response has been received, and then closes the
+  underlying socket.
+  """
+  @spec close(atom, Keyword.t, t) :: :ok | { :error, error }
   def close(reason, options // [], web(socket: socket, version: 13, mask: mask) = self) do
     if is_tuple(reason) do
       { reason, data } = reason
@@ -638,6 +835,11 @@ defmodule Socket.Web do
     do_close(self.recv, self)
   end
 
+  @doc """
+  Close the underlying socket, only use when you mean it, normal closure
+  procedure should be preferred.
+  """
+  @spec abort(t) :: :ok | { :error, error }
   def abort(web(socket: socket)) do
     socket.close
   end

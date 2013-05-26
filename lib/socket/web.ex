@@ -91,7 +91,7 @@ defmodule Socket.Web do
   end
 
   def connect(address) do
-    connnect(address, [])
+    connect(address, [])
   end
 
   @doc """

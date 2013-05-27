@@ -26,6 +26,8 @@ defmodule Socket.Web do
                   { :ping, binary } |
                   { :pong, binary }
 
+  @compile { :inline, opcode: 1, close_code: 1, key: 1, error: 1, length: 1, forge: 2 }
+
   Enum.each [ text: 0x1, binary: 0x2, close: 0x8, ping: 0x9, pong: 0xA ], fn { name, code } ->
     defp :opcode, [name], [], do: code
     defp :opcode, [code], [], do: name

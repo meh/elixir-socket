@@ -47,8 +47,8 @@ defmodule Socket.TCP do
   defexception Error, code: nil do
     @type t :: Error.t
 
-    def message(self) do
-      to_binary(:inet.format_error(self.code))
+    def message(Error[code: code]) do
+      to_binary(:inet.format_error(code))
     end
   end
 

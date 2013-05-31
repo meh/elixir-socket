@@ -27,6 +27,8 @@ defmodule Socket.SSL do
   * `:password` the password to use to decrypt certificates
   * `:renegotiation` if it's set to `:secure` renegotiation will be secured
   * `:ciphers` is a list of ciphers to allow
+  * `:advertised_protocols` is a list of strings representing the advertised
+    protocols for NPN
 
   You can also pass TCP options.
   """
@@ -465,6 +467,20 @@ defmodule Socket.SSL do
   end
 
   @doc """
+  Get the negotiated next protocol.
+  """
+  @spec next_protocol(t) :: String.t | nil
+  def next_protocol(ssl(socket: sock)) do
+    case :ssl.negotiated_next_protocol(sock) do
+      { :ok, protocol } ->
+        protocol
+
+      { :error, :next_protocol_not_negotiated } ->
+        nil
+    end
+  end
+
+  @doc """
   Return the local address and port.
   """
   @spec local(t) :: { :ok, { :inet.ip_address, :inet.port_number } } | { :error, term }
@@ -783,6 +799,10 @@ defmodule Socket.SSL do
 
     if options[:reuse] == true do
       args = [{ :reuse_sessions, true } | args]
+    end
+
+    if options[:advertised_protocols] do
+      args = [{ :next_protocols_advertised, options[:advertised_protocols] } | args]
     end
 
     args

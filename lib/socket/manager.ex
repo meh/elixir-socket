@@ -28,39 +28,39 @@ defmodule Socket.Manager do
     Process.exit(Process.whereis(__MODULE__), "application stopped")
   end
 
-  def handle_info({ :close, socket }, _state) do
+  def handle_info({ :close, socket }, state) do
     :inet.close(socket)
 
-    { :noreply, _state }
+    { :noreply, state }
   end
 
-  def handle_info({ :close, :tcp, socket }, _state) do
+  def handle_info({ :close, :tcp, socket }, state) do
     :gen_tcp.close(socket)
 
-    { :noreply, _state }
+    { :noreply, state }
   end
 
-  def handle_info({ :close, :udp, socket }, _state) do
+  def handle_info({ :close, :udp, socket }, state) do
     :gen_udp.close(socket)
 
-    { :noreply, _state }
+    { :noreply, state }
   end
 
-  def handle_info({ :close, :sctp, socket }, _state) do
+  def handle_info({ :close, :sctp, socket }, state) do
     :gen_sctp.close(socket)
 
-    { :noreply, _state }
+    { :noreply, state }
   end
 
-  def handle_info({ :close, :sctp, socket, assoc }, _state) do
+  def handle_info({ :close, :sctp, socket, assoc }, state) do
     :gen_sctp.eof(socket, assoc)
 
-    { :noreply, _state }
+    { :noreply, state }
   end
 
-  def handle_info({ :close, :ssl, socket }, _state) do
+  def handle_info({ :close, :ssl, socket }, state) do
     :ssl.close(socket)
 
-    { :noreply, _state }
+    { :noreply, state }
   end
 end

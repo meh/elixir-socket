@@ -703,7 +703,7 @@ defmodule Socket.SSL do
   Shutdown the socket for the given mode.
   """
   @spec shutdown(:read | :write | :both, t) :: :ok | { :error, term }
-  def shutdown(how, ssl(socket: sock)) do
+  def shutdown(how // :both, ssl(socket: sock)) do
     :ssl.shutdown(sock, case how do
       :read  -> :read
       :write -> :write
@@ -715,7 +715,7 @@ defmodule Socket.SSL do
   Shutdown the socket for the given mode, raising if an error occurs.
   """
   @spec shutdown!(:read | :write | :both, t) :: :ok | no_return
-  def shutdown!(how, self) do
+  def shutdown!(how // :both, self) do
     case shutdown(how, self) do
       :ok ->
         :ok

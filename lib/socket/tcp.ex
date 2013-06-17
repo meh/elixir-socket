@@ -309,6 +309,30 @@ defmodule Socket.TCP do
   end
 
   @doc """
+  Set the socket in active mode.
+  """
+  @spec active(t) :: none
+  def active(tcp(socket: sock)) do
+    :inet.setopts(sock, [{ :active, true }])
+  end
+
+  @doc """
+  Set the socket in active mode.
+  """
+  @spec active(:once, t) :: none
+  def active(:once, tcp(socket: sock)) do
+    :inet.setopts(sock, [{ :active, :once }])
+  end
+
+  @doc """
+  Set the socket in passive mode.
+  """
+  @spec passive(t) :: none
+  def passive(tcp(socket: sock)) do
+    :inet.setopts(sock, [{ :active, false }])
+  end
+
+  @doc """
   Set options of the socket.
   """
   @spec options(Keyword.t, t) :: :ok | { :error, Error.t }

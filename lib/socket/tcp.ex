@@ -508,7 +508,7 @@ defmodule Socket.TCP do
   Shutdown the socket for the given mode.
   """
   @spec shutdown(:read | :write | :both, t) :: :ok | { :error, Error.t }
-  def shutdown(how, tcp(socket: sock)) do
+  def shutdown(how // :both, tcp(socket: sock)) do
     :gen_tcp.shutdown(sock, case how do
       :read  -> :read
       :write -> :write
@@ -520,7 +520,7 @@ defmodule Socket.TCP do
   Shutdown the socket for the given mode, raising if an error occurs.
   """
   @spec shutdown!(:read | :write | :both, t) :: :ok | no_return
-  def shutdown!(how, self) do
+  def shutdown!(how // :both, self) do
     case shutdown(how, self) do
       :ok ->
         :ok

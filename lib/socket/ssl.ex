@@ -401,6 +401,34 @@ defmodule Socket.SSL do
   end
 
   @doc """
+  Set the process which will receive the messages.
+  """
+  @spec process(pid, t) :: :ok | { :error, :closed | :not_owner | Error.t }
+  def process(pid, ssl(socket: sock)) do
+    :ssl.controlling_process(sock, pid)
+  end
+
+  @doc """
+  Set the process which will receive the messages, raising if an error occurs.
+  """
+  @spec process!(pid, t) :: :ok | no_return
+  def process!(pid, ssl(socket: sock)) do
+    case :ssl.controlling_process(sock, pid) do
+      :ok ->
+        :ok
+
+      :closed ->
+        raise RuntimeError, message: "the socket is closed"
+
+      :not_owner ->
+        raise RuntimeError, message: "the current process isn't the owner"
+
+      code ->
+        raise Error, code: code
+    end
+  end
+
+  @doc """
   Set options of the socket.
   """
   @spec options(Keyword.t, t) :: :ok | { :error, :inet.posix }

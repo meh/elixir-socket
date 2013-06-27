@@ -64,19 +64,20 @@ defmodule Socket.Web do
   @spec headers([{ name :: String.t, value :: String.t }], Socket.t) :: [{ name :: String.t, value :: String.t }]
   defp headers(acc, socket) do
     case socket.recv! do
-      "\r\n" ->
+      { :http_header, _, name, _, value } when is_atom name ->
+        [{ atom_to_binary(name) |> String.downcase, value } | acc] |> headers(socket)
+
+      { :http_header, _, name, _, value } when is_binary name ->
+        [{ String.downcase(name), value } | acc] |> headers(socket)
+
+      :http_eoh ->
         acc
-
-      line ->
-        [_, name, value] = Regex.run %r/^(.*?):\s*(.*?)\s*$/, line
-
-        headers([{ String.downcase(name), value } | acc], socket)
     end
   end
 
   @spec key(String.t) :: String.t
   defp key(value) do
-    :base64.encode(:crypto.sha(value <> "258EAFA5-E914-47DA-95CA-C5AB0DC85B11"))
+    :crypto.hash(:sha, value <> "258EAFA5-E914-47DA-95CA-C5AB0DC85B11") |> :base64.encode
   end
 
   @spec error(t) :: module
@@ -208,11 +209,12 @@ defmodule Socket.Web do
       "Sec-WebSocket-Version: 13", "\r\n",
       "\r\n"])
 
-    client.options(packet: :line)
-    [_, "101"] = Regex.run %r"^HTTP/1.1 (\d+) .*$", client.recv!
-    headers    = headers([], client)
+    client.options(packet: :http_bin)
+    { :http_response, _, 101, _ } = client.recv!
+    headers                       = headers([], client)
 
-    if headers["upgrade"] != "websocket" or headers["connection"] != "Upgrade" do
+    if String.downcase(headers["upgrade"]) != "websocket" or
+       String.downcase(headers["connection"]) != "upgrade" do
       client.close
 
       raise RuntimeError, message: "malformed upgrade response"

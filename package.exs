@@ -1,7 +1,7 @@
 Expm.Package.new(
   name: "socket",
   description: "Elixir socket wrapping library.",
-  version: "0.1.0",
+  version: "0.1.1",
   licenses: [[name: "WTFPL"]],
   keywords: ["socket", "wrapper", "websocket", "tcp", "udp", "ssl"],
   maintainers: [[name: "meh.", email: "meh@schizofreni.co"]],

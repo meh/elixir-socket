@@ -47,3 +47,16 @@ defmodule HTTP do
   end
 end
 ```
+
+Connecting to a Websocket
+-------------------------
+```elixir
+defmodule Ws do
+  def simple_ws_conn() do
+    {:ok, sock} = Socket.Web.connect("echo.websocket.org")
+    sock.send({:text, "hello there"}) # you can also send binary using {:binary, "hello there"})
+    {:ok, data} = sock.recv
+    IO.inspect data
+  end
+end
+```

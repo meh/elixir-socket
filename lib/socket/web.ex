@@ -9,6 +9,14 @@
 defmodule Socket.Web do
   @moduledoc %B"""
   This module implements RFC 6455 WebSockets.
+
+  ## Examples
+
+      {:ok, sock} = Socket.Web.connect("echo.websocket.org")
+      sock.send({:text, "hello there"}) # you can also send binary using {:binary, "hello there"})
+      {:ok, data} = sock.recv
+      IO.inspect data
+
   """
 
   use    Bitwise

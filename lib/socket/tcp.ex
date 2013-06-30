@@ -357,7 +357,7 @@ defmodule Socket.TCP do
   @doc """
   Set the type of packet to decode.
   """
-  @spec packet(atom, t) :: :ok, { :error, Error.t }
+  @spec packet(atom, t) :: :ok | { :error, Error.t }
   def packet(type, tcp(socket: sock)) do
     :inet.setopts(sock, [{ :packet, type }])
   end

@@ -757,7 +757,7 @@ defmodule Socket.SSL do
   def arguments(options) do
     args = Socket.TCP.arguments(options)
 
-    args = case options[:cert] do
+    args = case Keyword.get(options, :cert) do
       [path: path] ->
         [{ :certfile, path } | args]
 
@@ -768,7 +768,7 @@ defmodule Socket.SSL do
         [{ :cert, content } | args]
     end
 
-    args = case options[:key] do
+    args = case Keyword.get(options, :key) do
       [path: path] ->
         [{ :keyfile, path } | args]
 
@@ -785,7 +785,7 @@ defmodule Socket.SSL do
         [{ :key, { :PrivateKeyInfo, content } } | args]
     end
 
-    args = case options[:authorities] do
+    args = case Keyword.get(options, :authorities) do
       [path: path] ->
         [{ :cacertfile, path } | args]
 
@@ -796,7 +796,7 @@ defmodule Socket.SSL do
         [{ :cacert, content } | args]
     end
 
-    args = case options[:dh] do
+    args = case Keyword.get(options, :dh) do
       [path: path] ->
         [{ :dhfile, path } | args]
 
@@ -807,7 +807,7 @@ defmodule Socket.SSL do
         [{ :dh, content } | args]
     end
 
-    args = case options[:verify] do
+    args = case Keyword.get(options, :verify) do
       false ->
         [{ :verify, :verify_none } | args]
 
@@ -821,40 +821,40 @@ defmodule Socket.SSL do
         args
     end
 
-    if options[:password] do
-      args = [{ :password, options[:password] } | args]
+    if password = Keyword.get(options, :password) do
+      args = [{ :password, password } | args]
     end
 
-    if options[:renegotiation] == :secure do
+    if Keyword.get(options, :renegotiation) == :secure do
       args = [{ :secure_renegotiate, true } | args]
     end
 
-    if options[:ciphers] do
-      args = [{ :ciphers, options[:ciphers] } | args]
+    if ciphers = Keyword.get(options, :ciphers) do
+      args = [{ :ciphers, ciphers } | args]
     end
 
-    if options[:depth] do
-      args = [{ :depth, options[:depth] } | args]
+    if depth = Keyword.get(options, :depth) do
+      args = [{ :depth, depth } | args]
     end
 
-    if options[:versions] do
-      args = [{ :versions, options[:versions] } | args]
+    if versions = Keyword.get(options, :versions) do
+      args = [{ :versions, versions } | args]
     end
 
-    if options[:hibernate] do
-      args = [{ :hibernate_after, options[:hibernate] } | args]
+    if hibernate = Keyword.get(options, :hibernate) do
+      args = [{ :hibernate_after, hibernate } | args]
     end
 
-    if is_function(options[:reuse]) do
-      args = [{ :reuse_session, options[:reuse] } | args]
+    args = case Keyword.get(options, :reuse) do
+      fun when is_function(fun) ->
+        [{ :reuse_session, fun } | args]
+
+      true ->
+        [{ :reuse_sessions, true } | args]
     end
 
-    if options[:reuse] == true do
-      args = [{ :reuse_sessions, true } | args]
-    end
-
-    if options[:advertised_protocols] do
-      args = [{ :next_protocols_advertised, options[:advertised_protocols] } | args]
+    if protocols = Keyword.get(options, :advertised_protocols) do
+      args = [{ :next_protocols_advertised, protocols } | args]
     end
 
     args

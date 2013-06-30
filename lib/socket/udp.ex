@@ -344,52 +344,55 @@ defmodule Socket.UDP do
   def arguments(options) do
     args = Socket.arguments(options)
 
-    args = case options[:as] || :binary do
-      :list   -> [:list | args]
-      :binary -> [:binary | args]
+    args = case Keyword.get(options, :as, :binary) do
+      :list ->
+        [:list | args]
+
+      :binary ->
+        [:binary | args]
     end
 
-    if local = options[:local] do
-      if address = local[:address] do
-        if is_binary(address) do
-          address = binary_to_list(address)
-        end
-
+    if local = Keyword.get(options, :local) do
+      if address = Keyword.get(local, :address) do
         args = [{ :ip, Socket.Address.parse(address) } | args]
       end
 
-      if local[:fd] do
-        args = [{ :fd, local[:fd] } | args]
+      if fd = Keyword.get(local, :fd) do
+        args = [{ :fd, fd } | args]
       end
     end
 
-    args = case options[:version] do
-      4 -> [:inet | args]
-      6 -> [:inet6 | args]
+    args = case Keyword.get(options, :version) do
+      4 ->
+        [:inet | args]
 
-      nil -> args
+      6 ->
+        [:inet6 | args]
+
+      nil ->
+        args
     end
 
     if Keyword.has_key?(options, :broadcast) do
-      args = [{ :broadcast, options[:broadcast] } | args]
+      args = [{ :broadcast, Keyword.get(options, :broadcast) } | args]
     end
 
-    if multicast = options[:multicast] do
-      if multicast[:address] do
-        args = [{ :multicast_if, multicast[:address] } | args]
+    if multicast = Keyword.get(options, :multicast) do
+      if address = Keyword.get(multicast, :address) do
+        args = [{ :multicast_if, address } | args]
       end
 
-      if multicast[:loop] do
-        args = [{ :multicast_loop, multicast[:loop] } | args]
+      if loop = Keyword.get(multicast, :loop) do
+        args = [{ :multicast_loop, loop } | args]
       end
 
-      if multicast[:ttl] do
-        args = [{ :multicast_ttl, multicast[:ttl] } | args]
+      if ttl = Keyword.get(multicast, :ttl) do
+        args = [{ :multicast_ttl, ttl } | args]
       end
     end
 
-    if options[:membership] do
-      args = [{ :add_membership, options[:membership] } | args]
+    if membership = Keyword.get(options, :membership) do
+      args = [{ :add_membership, membership } | args]
     end
 
     args

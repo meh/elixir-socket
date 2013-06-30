@@ -554,64 +554,67 @@ defmodule Socket.TCP do
   def arguments(options) do
     args = Socket.arguments(options)
 
-    args = case options[:as] || :binary do
-      :list   -> [:list | args]
-      :binary -> [:binary | args]
+    args = case Keyword.get(options, :as, :binary) do
+      :list ->
+        [:list | args]
+
+      :binary ->
+        [:binary | args]
     end
 
-    if options[:size] do
-      args = [{ :packet_size, options[:size] } | args]
+    if size = Keyword.get(options, :size) do
+      args = [{ :packet_size, size } | args]
     end
 
-    if options[:packet] do
-      args = [{ :packet, options[:packet] } | args]
+    if packet = Keyword.get(options, :packet) do
+      args = [{ :packet, packet } | args]
     end
 
-    if options[:backlog] do
-      args = [{ :backlog, options[:backlog] } | args]
+    if backlog = Keyword.get(options, :backlog) do
+      args = [{ :backlog, backlog } | args]
     end
 
-    if watermark = options[:watermark] do
-      if watermark[:low] do
-        args = [{ :low_watermark, watermark[:low] } | args]
+    if watermark = Keyword.get(options, :watermark) do
+      if low = Keyword.get(watermark, :low) do
+        args = [{ :low_watermark, low } | args]
       end
 
-      if watermark[:high] do
-        args = [{ :high_watermark, watermark[:high] } | args]
+      if high = Keyword.get(watermark, :high) do
+        args = [{ :high_watermark, high } | args]
       end
     end
 
-    if local = options[:local] do
-      if address = local[:address] do
-        if is_binary(address) do
-          address = binary_to_list(address)
-        end
-
+    if local = Keyword.get(options, :local) do
+      if address = Keyword.get(local, :address) do
         args = [{ :ip, Socket.Address.parse(address) } | args]
       end
 
-      if local[:port] do
-        args = [{ :port, local[:port] } | args]
+      if port = Keyword.get(local, :port) do
+        args = [{ :port, port } | args]
       end
 
-      if local[:fd] do
-        args = [{ :fd, local[:fd] } | args]
+      if fd = Keyword.get(local, :fd) do
+        args = [{ :fd, fd } | args]
       end
     end
 
-    args = case options[:version] do
-      4 -> [:inet | args]
-      6 -> [:inet6 | args]
+    args = case Keyword.get(options, :version) do
+      4 ->
+        [:inet | args]
 
-      nil -> args
+      6 ->
+        [:inet6 | args]
+
+      nil ->
+        args
     end
 
-    if options[:options] do
-      if List.member?(options[:options], :keepalive) do
+    if opts = Keyword.get(options, :options) do
+      if List.member?(opts, :keepalive) do
         args = [{ :keepalive, true } | args]
       end
 
-      if List.member?(options[:options], :nodelay) do
+      if List.member?(opts, :nodelay) do
         args = [{ :nodelay, true } | args]
       end
     end

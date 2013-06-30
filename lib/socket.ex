@@ -146,7 +146,7 @@ defmodule Socket do
   def arguments(options) do
     args = []
 
-    args = case options[:mode] || :passive do
+    args = case Keyword.get(options, :mode, :passive) do
       :active ->
         [{ :active, true } | args]
 
@@ -155,27 +155,27 @@ defmodule Socket do
     end
 
     if Keyword.has_key?(options, :route) do
-      args = [{ :dontroute, !options[:route] } | args]
+      args = [{ :dontroute, !Keyword.get(options, :route) } | args]
     end
 
-    if options[:reuseaddr] do
+    if Keyword.get(options, :reuseaddr) do
       args = [{ :reuseaddr, true } | args]
     end
 
-    if options[:linger] do
-      args = [{ :linger, { true, options[:linger] } } | args]
+    if linger = Keyword.get(options, :linger) do
+      args = [{ :linger, { true, linger } } | args]
     end
 
-    if options[:priority] do
-      args = [{ :priority, options[:priority] } | args]
+    if priority = Keyword.get(options, :priority) do
+      args = [{ :priority, priority } | args]
     end
 
-    if options[:tos] do
-      args = [{ :tos, options[:tos] } | args]
+    if tos = Keyword.get(options, :tos) do
+      args = [{ :tos, tos } | args]
     end
 
-    if send = options[:send] do
-      case send[:timeout] do
+    if send = Keyword.get(options, :send) do
+      case Keyword.get(send, :timeout) do
         { timeout, :close } ->
           args = [{ :send_timeout, timeout }, { :send_timeout_close, true } | args]
 
@@ -183,18 +183,18 @@ defmodule Socket do
           args = [{ :send_timeout, timeout } | args]
       end
 
-      if send[:delay] do
-        args = [{ :delay_send, send[:delay] } | args]
+      if delay = Keyword.get(send, :delay) do
+        args = [{ :delay_send, delay } | args]
       end
 
-      if send[:buffer] do
-        args = [{ :sndbuf, send[:buffer] } | args]
+      if buffer = Keyword.get(send, :buffer) do
+        args = [{ :sndbuf, buffer } | args]
       end
     end
 
-    if recv = options[:recv] do
-      if recv[:buffer] do
-        args = [{ :recbuf, recv[:buffer] } | args]
+    if recv = Keyword.get(options, :recv) do
+      if buffer = Keyword.get(recv, :buffer) do
+        args = [{ :recbuf, buffer } | args]
       end
     end
 

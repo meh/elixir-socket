@@ -477,7 +477,7 @@ defmodule Socket.SSL do
   @doc """
   Set the type of packet to decode.
   """
-  @spec packet(atom, t) :: :ok, { :error, Error.t }
+  @spec packet(atom, t) :: :ok | { :error, Error.t }
   def packet(type, ssl(socket: sock)) do
     :ssl.setopts(sock, [{ :packet, type }])
   end

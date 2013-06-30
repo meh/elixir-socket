@@ -475,6 +475,28 @@ defmodule Socket.SSL do
   end
 
   @doc """
+  Set the type of packet to decode.
+  """
+  @spec packet(atom, t) :: :ok, { :error, Error.t }
+  def packet(type, ssl(socket: sock)) do
+    :ssl.setopts(sock, [{ :packet, type }])
+  end
+
+  @doc """
+  Set the type of packet to decode, raising if an error occurs.
+  """
+  @spec packet!(atom, t) :: :ok | no_return
+  def packet!(type, self) do
+    case packet(type, self) do
+      :ok ->
+        :ok
+
+      { :error, code } ->
+        raise Error, code: code
+    end
+  end
+
+  @doc """
   Get information about the SSL connection.
   """
   @spec info(t) :: { :ok, list } | { :error, term }

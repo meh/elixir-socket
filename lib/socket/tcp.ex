@@ -355,6 +355,28 @@ defmodule Socket.TCP do
   end
 
   @doc """
+  Set the type of packet to decode.
+  """
+  @spec packet(atom, t) :: :ok, { :error, Error.t }
+  def packet(type, tcp(socket: sock)) do
+    :inet.setopts(sock, [{ :packet, type }])
+  end
+
+  @doc """
+  Set the type of packet to decode, raising if an error occurs.
+  """
+  @spec packet!(atom, t) :: :ok | no_return
+  def packet!(type, self) do
+    case packet(type, self) do
+      :ok ->
+        :ok
+
+      { :error, code } ->
+        raise Error, code: code
+    end
+  end
+
+  @doc """
   Return the local address and port.
   """
   @spec local(t) :: { :ok, { :inet.ip_address, :inet.port_number } } | { :error, Error.t }

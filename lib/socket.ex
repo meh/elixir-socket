@@ -202,8 +202,7 @@ defmodule Socket do
   end
 
   defp uris do
-    Enum.each [URI.WS, URI.WSS], Code.ensure_loaded(&1)
-
-    :ok
+    URI.default_port "ws", 80
+    URI.default_port "wss", 443
   end
 end

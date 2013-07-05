@@ -10,7 +10,7 @@ defmodule Socket.Mixfile do
 
   # Configuration for the OTP application
   def application do
-    [ applications: [:finalizer],
+    [ applications: [:finalizer, :crypto, :ssl],
       mod: { Socket.Manager, [] } ]
   end
 

@@ -14,7 +14,7 @@ defrecord Socket.Host, [:name, :aliases, :type, :length, :list] do
   def by_address(address) do
     case :inet.gethostbyaddr(Socket.Address.parse(address)) do
       { :ok, host } ->
-        { :ok, set_elem host, 0, Socket.Host }
+        { :ok, set_elem(host, 0, Socket.Host) }
 
       error ->
         error
@@ -28,7 +28,7 @@ defrecord Socket.Host, [:name, :aliases, :type, :length, :list] do
   def by_address!(address) do
     case :inet.gethostbyaddr(Socket.Address.parse(address)) do
       { :ok, host } ->
-        set_elem host, 0, Socket.Host
+        set_elem(host, 0, Socket.Host)
 
       { :error, code } ->
         raise PosixError, code: code
@@ -46,7 +46,7 @@ defrecord Socket.Host, [:name, :aliases, :type, :length, :list] do
 
     case :inet.gethostbyname(name) do
       { :ok, host } ->
-        { :ok, set_elem host, 0, Socket.Host }
+        { :ok, set_elem(host, 0, Socket.Host) }
 
       error ->
         error
@@ -64,7 +64,7 @@ defrecord Socket.Host, [:name, :aliases, :type, :length, :list] do
 
     case :inet.gethostbyname(name, family) do
       { :ok, host } ->
-        { :ok, set_elem host, 0, Socket.Host }
+        { :ok, set_elem(host, 0, Socket.Host) }
 
       error ->
         error
@@ -82,7 +82,7 @@ defrecord Socket.Host, [:name, :aliases, :type, :length, :list] do
 
     case :inet.gethostbyname(name) do
       { :ok, host } ->
-        set_elem host, 0, Socket.Host
+        set_elem(host, 0, Socket.Host)
 
       { :error, code } ->
         raise PosixError, code: code
@@ -100,7 +100,7 @@ defrecord Socket.Host, [:name, :aliases, :type, :length, :list] do
 
     case :inet.gethostbyname(name, family) do
       { :ok, host } ->
-        set_elem host, 0, Socket.Host
+        set_elem(host, 0, Socket.Host)
 
       { :error, code } ->
         raise PosixError, code: code

@@ -67,7 +67,7 @@ defmodule Socket.Web do
     end
   end
 
-  defrecordp :web, socket: nil, version: nil, path: nil, origin: nil, key: nil, mask: nil
+  defrecordp :web, __MODULE__, socket: nil, version: nil, path: nil, origin: nil, key: nil, mask: nil
 
   @spec headers([{ name :: String.t, value :: String.t }], Socket.t) :: [{ name :: String.t, value :: String.t }]
   defp headers(acc, socket) do

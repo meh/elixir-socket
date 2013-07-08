@@ -59,7 +59,7 @@ defmodule Socket.SSL do
 
   @type t :: record
 
-  defrecordp :ssl, socket: nil, reference: nil
+  defrecordp :ssl, __MODULE__, socket: nil, reference: nil
 
   @doc """
   Wrap an existing socket.

@@ -54,7 +54,7 @@ defmodule Socket.TCP do
 
   @type t :: record
 
-  defrecordp :tcp, socket: nil, reference: nil
+  defrecordp :tcp, __MODULE__, socket: nil, reference: nil
 
   @doc """
   Wrap an existing socket.

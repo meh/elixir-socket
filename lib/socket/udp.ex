@@ -44,7 +44,7 @@ defmodule Socket.UDP do
 
   @type t :: record
 
-  defrecordp :udp, socket: nil, reference: nil
+  defrecordp :udp, __MODULE__, socket: nil, reference: nil
 
   @doc """
   Wrap an existing socket.
@@ -216,7 +216,7 @@ defmodule Socket.UDP do
 
     @type t :: record
 
-    defrecordp :association, socket: nil, address: nil, port: nil
+    defrecordp :association, __MODULE__, socket: nil, address: nil, port: nil
 
     @doc false
     def new(socket, address, port) do

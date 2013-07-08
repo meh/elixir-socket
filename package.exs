@@ -5,4 +5,4 @@ Expm.Package.new(
   licenses: [[name: "WTFPL"]],
   keywords: ["socket", "wrapper", "websocket", "tcp", "udp", "ssl"],
   maintainers: [[name: "meh.", email: "meh@schizofreni.co"]],
-  repositories: [[github: "meh/elixir-socket", tag: "v0.1.0"]])
+  repositories: [[github: "meh/elixir-socket", tag: "v0.1.2"]])

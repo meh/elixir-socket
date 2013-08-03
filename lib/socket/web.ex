@@ -205,7 +205,7 @@ defmodule Socket.Web do
     key    = :base64.encode(options[:key] || "fork the dongles")
 
     client = mod.connect!(address, port)
-    client.options(packet: :raw)
+    client.packet!(:raw)
     client.send!([
       "GET #{path} HTTP/1.1", "\r\n",
       "Host: #{address}", "\r\n",
@@ -217,7 +217,7 @@ defmodule Socket.Web do
       "Sec-WebSocket-Version: 13", "\r\n",
       "\r\n"])
 
-    client.options(packet: :http_bin)
+    client.packet(:http_bin)
     { :http_response, _, 101, _ } = client.recv!
     headers                       = headers([], client)
 
@@ -240,7 +240,7 @@ defmodule Socket.Web do
       raise RuntimeError, message: "wrong key response"
     end
 
-    client.options(packet: :raw)
+    client.packet!(:raw)
 
     web(socket: client, version: 13, path: path, origin: origin, key: key, mask: true)
   end
@@ -399,7 +399,7 @@ defmodule Socket.Web do
   end
 
   def accept!(web(socket: socket, key: key)) do
-    socket.options!(packet: :raw)
+    socket.packet(:raw)
     socket.send!([
       "HTTP/1.1 101 Switching Protocols", "\r\n",
       "Upgrade: websocket", "\r\n",
@@ -417,10 +417,14 @@ defmodule Socket.Web do
   @spec accept!(Keyword.t, t) :: t | no_return
   def accept!(options, web(socket: socket, key: nil)) do
     client = socket.accept!(options)
-    client.options!(packet: :line)
+    client.packet!(:http_bin)
 
-    [_, path] = Regex.run %r"^GET (/.*?) HTTP/1.1", client.recv!
-    headers   = headers([], client)
+    case client.recv! do
+      { :http_request, :GET, { :abs_path, path }, _ } ->
+        path
+    end
+
+    headers = headers([], client)
 
     if headers["upgrade"] != "websocket" or headers["connection"] != "Upgrade" do
       client.close
@@ -434,7 +438,7 @@ defmodule Socket.Web do
       raise RuntimeError, message: "missing key"
     end
 
-    client.options(packet: :raw)
+    client.packet!(:raw)
 
     web(socket: client, origin: headers["origin"], path: path, version: 13, key: headers["sec-websocket-key"])
   end

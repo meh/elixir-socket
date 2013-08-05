@@ -208,7 +208,7 @@ defmodule Socket.Web do
     client.packet!(:raw)
     client.send!([
       "GET #{path} HTTP/1.1", "\r\n",
-      "Host: #{address}", "\r\n",
+      "Host: #{address}:#{port}" "\r\n",
       if(origin, do: ["Origin: #{origin}", "\r\n"], else: []),
       "Upgrade: websocket", "\r\n",
       "Connection: Upgrade", "\r\n",

@@ -208,7 +208,7 @@ defmodule Socket.Web do
     client.packet!(:raw)
     client.send!([
       "GET #{path} HTTP/1.1", "\r\n",
-      "Host: #{address}:#{port}" "\r\n",
+      "Host: #{address}:#{port}", "\r\n",
       if(origin, do: ["Origin: #{origin}", "\r\n"], else: []),
       "Upgrade: websocket", "\r\n",
       "Connection: Upgrade", "\r\n",
@@ -812,6 +812,7 @@ defmodule Socket.Web do
     socket.send(<< 1              :: 1,
                    0              :: 3,
                    opcode(:close) :: 4,
+
                    forge(nil, <<>>) :: binary >>)
   end
 
@@ -831,6 +832,7 @@ defmodule Socket.Web do
     socket.send(<< 1              :: 1,
                    0              :: 3,
                    opcode(:close) :: 4,
+
                    forge(options[:mask] || mask,
                      << close_code(reason) :: 16, data :: binary >>) :: binary >>)
 

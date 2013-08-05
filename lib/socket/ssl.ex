@@ -873,6 +873,9 @@ defmodule Socket.SSL do
 
       true ->
         [{ :reuse_sessions, true } | args]
+
+      nil ->
+        args
     end
 
     if protocols = Keyword.get(options, :advertised_protocols) do

@@ -67,7 +67,7 @@ defmodule Socket.Web do
     end
   end
 
-  defrecordp :web, __MODULE__, socket: nil, version: nil, path: nil, origin: nil, key: nil, mask: nil
+  defrecordp :web, __MODULE__, socket: nil, version: nil, path: nil, origin: nil, protocols: nil, extensions: nil, key: nil, mask: nil
 
   @spec headers([{ name :: String.t, value :: String.t }], Socket.t) :: [{ name :: String.t, value :: String.t }]
   defp headers(acc, socket) do
@@ -200,9 +200,11 @@ defmodule Socket.Web do
       Socket.TCP
     end
 
-    path   = options[:path] || "/"
-    origin = options[:origin]
-    key    = :base64.encode(options[:key] || "fork the dongles")
+    path       = options[:path] || "/"
+    origin     = options[:origin]
+    protocols  = options[:protocol]
+    extensions = options[:extensions]
+    key        = :base64.encode(options[:key] || "fork the dongles")
 
     client = mod.connect!(address, port)
     client.packet!(:raw)
@@ -213,7 +215,8 @@ defmodule Socket.Web do
       "Upgrade: websocket", "\r\n",
       "Connection: Upgrade", "\r\n",
       "Sec-WebSocket-Key: #{key}", "\r\n",
-      "Sec-WebSocket-Protocol: chat", "\r\n",
+      if(protocols, do: ["Sec-WebSocket-Protocol: #{Enum.join protocols, ", "}", "\r\n"], else: []),
+      if(extensions, do: ["Sec-WebSocket-Extensions: #{Enum.join extensions, ", "}", "\r\n"], else: []),
       "Sec-WebSocket-Version: 13", "\r\n",
       "\r\n"])
 
@@ -394,20 +397,8 @@ defmodule Socket.Web do
   In case of error, it raises.
   """
   @spec accept!(t) :: t | no_return
-  def accept!(web(key: nil) = self) do
+  def accept!(self) do
     accept!([], self)
-  end
-
-  def accept!(web(socket: socket, key: key)) do
-    socket.packet(:raw)
-    socket.send!([
-      "HTTP/1.1 101 Switching Protocols", "\r\n",
-      "Upgrade: websocket", "\r\n",
-      "Connection: Upgrade", "\r\n",
-      "Sec-WebSocket-Accept: #{key(key)}", "\r\n",
-      "Sec-WebSocket-Protocol: chat", "\r\n",
-      "Sec-WebSocket-Version: 13", "\r\n",
-      "\r\n"])
   end
 
   @doc """
@@ -438,9 +429,39 @@ defmodule Socket.Web do
       raise RuntimeError, message: "missing key"
     end
 
+    protocols = if p = headers["sec-websocket-protocol"] do
+      String.split(p, %r/\s*,\s*/)
+    end
+
+    extensions = if e = headers["sec-websocket-extensions"] do
+      String.split(e, %r/\s*,\s*/)
+    end
+
     client.packet!(:raw)
 
-    web(socket: client, origin: headers["origin"], path: path, version: 13, key: headers["sec-websocket-key"])
+    web(socket: client,
+        origin: headers["origin"],
+        path: path,
+        version: 13,
+        key: headers["sec-websocket-key"],
+        protocols: protocols,
+        extensions: extensions)
+  end
+
+  def accept!(options, web(socket: socket, key: key)) do
+    extensions = options[:extension]
+    protocol   = options[:protocol]
+
+    socket.packet(:raw)
+    socket.send!([
+      "HTTP/1.1 101 Switching Protocols", "\r\n",
+      "Upgrade: websocket", "\r\n",
+      "Connection: Upgrade", "\r\n",
+      "Sec-WebSocket-Accept: #{key(key)}", "\r\n",
+      "Sec-WebSocket-Version: 13", "\r\n",
+      if(extensions, do: ["Sec-WebSocket-Extensions: ", Enum.join(extensions, ", "), "\r\n"], else: []),
+      if(protocol, do: ["Sec-WebSocket-Protocol: ", protocol, "\r\n"], else: []),
+      "\r\n"])
   end
 
   @doc """

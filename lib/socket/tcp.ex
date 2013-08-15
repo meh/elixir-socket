@@ -92,7 +92,7 @@ defmodule Socket.TCP do
   @spec connect(String.t | :inet.ip_address, :inet.port_number, Keyword.t) :: { :ok, t } | { :error, Error.t }
   def connect(address, port, options) do
     if is_binary(address) do
-      address = binary_to_list(address)
+      address = String.to_char_list!(address)
     end
 
     options = Keyword.put_new(options, :mode, :passive)

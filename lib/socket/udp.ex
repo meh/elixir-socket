@@ -188,7 +188,7 @@ defmodule Socket.UDP do
   @spec send(String.t | :inet.ip_address, :inet.port_number, iodata, t) :: :ok | { :error, Error.t }
   def send(address, port, value, udp(socket: sock)) do
     if is_binary(address) do
-      address = binary_to_list(address)
+      address = String.to_char_list!(address)
     end
 
     :gen_udp.send(sock, address, port, value)

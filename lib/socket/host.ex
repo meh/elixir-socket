@@ -41,7 +41,7 @@ defrecord Socket.Host, [:name, :aliases, :type, :length, :list] do
   @spec by_name(binary | char_list) :: { :ok, t } | { :error, :inet.posix }
   def by_name(name) do
     if is_binary(name) do
-      name = binary_to_list(name)
+      name = String.to_char_list!(name)
     end
 
     case :inet.gethostbyname(name) do
@@ -59,7 +59,7 @@ defrecord Socket.Host, [:name, :aliases, :type, :length, :list] do
   @spec by_name(binary | char_list, :inet.address_family) :: { :ok, t } | { :error, :inet.posix }
   def by_name(name, family) do
     if is_binary(name) do
-      name = binary_to_list(name)
+      name = String.to_char_list!(name)
     end
 
     case :inet.gethostbyname(name, family) do
@@ -77,7 +77,7 @@ defrecord Socket.Host, [:name, :aliases, :type, :length, :list] do
   @spec by_name!(binary | char_list) :: t | no_return
   def by_name!(name) do
     if is_binary(name) do
-      name = binary_to_list(name)
+      name = String.to_char_list!(name)
     end
 
     case :inet.gethostbyname(name) do
@@ -95,7 +95,7 @@ defrecord Socket.Host, [:name, :aliases, :type, :length, :list] do
   @spec by_name!(binary | char_list, :inet.address_family) :: t | no_return
   def by_name!(name, family) do
     if is_binary(name) do
-      name = binary_to_list(name)
+      name = String.to_char_list!(name)
     end
 
     case :inet.gethostbyname(name, family) do

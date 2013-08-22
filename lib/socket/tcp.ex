@@ -48,7 +48,7 @@ defmodule Socket.TCP do
     @type t :: Error.t
 
     def message(Error[code: code]) do
-      to_binary(:inet.format_error(code))
+      to_string(:inet.format_error(code))
     end
   end
 

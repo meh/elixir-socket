@@ -53,7 +53,7 @@ defmodule Socket.SSL do
     @type t :: term
 
     def message(self) do
-      to_binary(:ssl.format_error(self.code))
+      to_string(:ssl.format_error(self.code))
     end
   end
 

@@ -38,7 +38,7 @@ defmodule Socket.UDP do
     @type t :: Error.t
 
     def message(self) do
-      to_binary(:inet.format_error(self.code))
+      to_string(:inet.format_error(self.code))
     end
   end
 

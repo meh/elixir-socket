@@ -15,7 +15,7 @@ defmodule Socket.Manager do
   end
 
   def stop(_) do
-    Process.exit(Process.whereis(__MODULE__), "application stopped")
+    :gen_server.cast(__MODULE__, :stop)
   end
 
   def handle_info({ :close, socket }, state) do
@@ -52,5 +52,9 @@ defmodule Socket.Manager do
     :ssl.close(socket)
 
     { :noreply, state }
+  end
+
+  def handle_cast(:stop, _from, _state) do
+    { :stop, :normal, _state }
   end
 end

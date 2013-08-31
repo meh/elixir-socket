@@ -18,40 +18,40 @@ defmodule Socket.Manager do
     :gen_server.cast(__MODULE__, :stop)
   end
 
-  def handle_info({ :close, socket }, state) do
+  def handle_info({ :close, socket }, _state) do
     :inet.close(socket)
 
-    { :noreply, state }
+    { :noreply, _state }
   end
 
-  def handle_info({ :close, :tcp, socket }, state) do
+  def handle_info({ :close, :tcp, socket }, _state) do
     :gen_tcp.close(socket)
 
-    { :noreply, state }
+    { :noreply, _state }
   end
 
-  def handle_info({ :close, :udp, socket }, state) do
+  def handle_info({ :close, :udp, socket }, _state) do
     :gen_udp.close(socket)
 
-    { :noreply, state }
+    { :noreply, _state }
   end
 
-  def handle_info({ :close, :sctp, socket }, state) do
+  def handle_info({ :close, :sctp, socket }, _state) do
     :gen_sctp.close(socket)
 
-    { :noreply, state }
+    { :noreply, _state }
   end
 
-  def handle_info({ :close, :sctp, socket, assoc }, state) do
+  def handle_info({ :close, :sctp, socket, assoc }, _state) do
     :gen_sctp.eof(socket, assoc)
 
-    { :noreply, state }
+    { :noreply, _state }
   end
 
-  def handle_info({ :close, :ssl, socket }, state) do
+  def handle_info({ :close, :ssl, socket }, _state) do
     :ssl.close(socket)
 
-    { :noreply, state }
+    { :noreply, _state }
   end
 
   def handle_cast(:stop, _from, _state) do

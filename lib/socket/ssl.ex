@@ -31,6 +31,13 @@ defmodule Socket.SSL do
     protocols for NPN
 
   You can also pass TCP options.
+
+  ## Smart garbage collection
+
+  Normally sockets in Erlang are closed when the controlling process exits,
+  with smart garbage collection the controlling process will be the
+  `Socket.Manager` and it will be closed when there are no more references to
+  it.
   """
 
   @doc """
@@ -122,9 +129,9 @@ defmodule Socket.SSL do
 
     case :ssl.connect(address, port, arguments(options), options[:timeout] || :infinity) do
       { :ok, sock } ->
-        reference = if (options[:mode] == :passive and options[:automatic] != false) or
-                       (options[:mode] == :active  and options[:automatic] == true) do
+        reference = if options[:mode] == :passive and options[:automatic] != false do
           :ssl.controlling_process(sock, Process.whereis(Socket.Manager))
+
           Finalizer.define({ :close, :ssl, sock }, Process.whereis(Socket.Manager))
         end
 
@@ -219,8 +226,9 @@ defmodule Socket.SSL do
 
     case :ssl.listen(port, arguments(options)) do
       { :ok, sock } ->
-        reference = if options[:automatic] != false do
+        reference = if options[:mode] == :passive and options[:automatic] != false do
           :ssl.controlling_process(sock, Process.whereis(Socket.Manager))
+
           Finalizer.define({ :close, :ssl, sock }, Process.whereis(Socket.Manager))
         end
 
@@ -291,9 +299,9 @@ defmodule Socket.SSL do
 
     case :ssl.transport_accept(sock, options[:timeout] || :infinity) do
       { :ok, sock } ->
-        reference = if (options[:mode] == :passive and options[:automatic] != false) or
-                       (options[:mode] == :active  and options[:automatic] == true) do
+        reference = if options[:mode] == :active or (options[:mode] == :passive and options[:automatic] != false) do
           :ssl.controlling_process(sock, Process.whereis(Socket.Manager))
+
           Finalizer.define({ :close, :ssl, sock }, Process.whereis(Socket.Manager))
         end
 

@@ -34,6 +34,17 @@ defmodule Socket.TCP do
   * `:packet` see `inet:setopts`
   * `:size` sets the max length of the packet body, see `inet:setopts`
 
+  ## Smart garbage collection
+
+  Normally sockets in Erlang are closed when the controlling process exits,
+  with smart garbage collection the controlling process will be the
+  `Socket.Manager` and it will be closed when there are no more references to
+  it.
+
+  If you plan to change the active/passive mode of a socket, disable automatic
+  garbage collection or the messages will be sent to the manager, and that's
+  not what you want.
+
   ## Examples
 
       server = Socket.TCP.listen!(1337, packet: :line)
@@ -54,7 +65,7 @@ defmodule Socket.TCP do
 
   @type t :: record
 
-  defrecordp :tcp, __MODULE__, socket: nil, reference: nil
+  defrecordp :tcp, __MODULE__, socket: nil, manager: nil, reference: nil
 
   @doc """
   Wrap an existing socket.
@@ -99,9 +110,9 @@ defmodule Socket.TCP do
 
     case :gen_tcp.connect(address, port, arguments(options), options[:timeout] || :infinity) do
       { :ok, sock } ->
-        reference = if (options[:mode] == :passive and options[:automatic] != false) or
-                       (options[:mode] == :active  and options[:automatic] == true) do
+        reference = if options[:mode] == :passive and options[:automatic] != false do
           :gen_tcp.controlling_process(sock, Process.whereis(Socket.Manager))
+
           Finalizer.define({ :close, :tcp, sock }, Process.whereis(Socket.Manager))
         end
 
@@ -182,8 +193,9 @@ defmodule Socket.TCP do
 
     case :gen_tcp.listen(port, arguments(options)) do
       { :ok, sock } ->
-        reference = if options[:automatic] != false do
+        reference = if options[:mode] == :passive and options[:automatic] != false do
           :gen_tcp.controlling_process(sock, Process.whereis(Socket.Manager))
+
           Finalizer.define({ :close, :tcp, sock }, Process.whereis(Socket.Manager))
         end
 
@@ -241,9 +253,9 @@ defmodule Socket.TCP do
 
     case :gen_tcp.accept(sock, options[:timeout] || :infinity) do
       { :ok, sock } ->
-        reference = if (options[:mode] == :passive and options[:automatic] != false) or
-                       (options[:mode] == :active  and options[:automatic] == true) do
+        reference = if options[:mode] == :passive and options[:automatic] != false do
           :gen_tcp.controlling_process(sock, Process.whereis(Socket.Manager))
+
           Finalizer.define({ :close, :tcp, sock }, Process.whereis(Socket.Manager))
         end
 

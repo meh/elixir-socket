@@ -11,17 +11,7 @@ defmodule Socket.Manager do
   use GenServer.Behaviour
 
   def start(_, _) do
-    if pid = Process.whereis(__MODULE__) do
-      { :ok, pid }
-    else
-      case :gen_server.start_link(__MODULE__, [], []) do
-        { :ok, pid } = r ->
-          Process.register(pid, __MODULE__)
-          r
-
-        r -> r
-      end
-    end
+    :gen_server.start_link({ :local, __MODULE__ }, __MODULE__, [], []) do
   end
 
   def stop(_) do

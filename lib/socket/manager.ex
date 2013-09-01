@@ -11,7 +11,7 @@ defmodule Socket.Manager do
   use GenServer.Behaviour
 
   def start(_, _) do
-    :gen_server.start_link({ :local, __MODULE__ }, __MODULE__, [], []) do
+    :gen_server.start_link({ :local, __MODULE__ }, __MODULE__, [], [])
   end
 
   def stop(_) do

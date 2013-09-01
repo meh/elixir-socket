@@ -7,9 +7,24 @@
 #  0. You just DO WHAT THE FUCK YOU WANT TO.
 
 defmodule Socket do
-  @on_load :uris
-
   @type t :: port | record
+
+  defexception Error, reason: nil do
+    @type t :: Error.t
+
+    def message(Error[reason: reason]) do
+      cond do
+        message = Socket.TCP.error(reason) ->
+          message
+
+        message = Socket.SSL.error(reason) ->
+          message
+
+        true ->
+          reason |> to_string
+      end
+    end
+  end
 
   @doc """
   Create a socket connecting to somewhere using an URI.
@@ -150,6 +165,9 @@ defmodule Socket do
       :active ->
         [{ :active, true } | args]
 
+      :once ->
+        [{ :active, :once } | args]
+
       :passive ->
         [{ :active, false } | args]
     end
@@ -201,8 +219,144 @@ defmodule Socket do
     args
   end
 
+  use Socket.Helpers
+
+  defdelegate accept(self), to: Socket.Protocol
+  defbang accept(self), to: Socket.Protocol
+
+  defdelegate accept(self, options), to: Socket.Protocol
+  defbang accept(self, options), to: Socket.Protocol
+
+  defdelegate options(self, opts), to: Socket.Protocol
+  defbang options(self, opts), to: Socket.Protocol
+
+  defdelegate packet(self, type), to: Socket.Protocol
+  defbang packet(self, type), to: Socket.Protocol
+
+  defdelegate active(self), to: Socket.Protocol
+  defbang active(self), to: Socket.Protocol
+
+  defdelegate active(self, mode), to: Socket.Protocol
+  defbang active(self, mode), to: Socket.Protocol
+
+  defdelegate passive(self), to: Socket.Protocol
+  defbang passive(self), to: Socket.Protocol
+
+  defdelegate local(self), to: Socket.Protocol
+  defbang local(self), to: Socket.Protocol
+
+  defdelegate remote(self), to: Socket.Protocol
+  defbang remote(self), to: Socket.Protocol
+
+  defdelegate close(self), to: Socket.Protocol
+  defbang close(self), to: Socket.Protocol
+
+  @on_load :uris
+
   defp uris do
     URI.default_port "ws", 80
     URI.default_port "wss", 443
+    :ok
+  end
+end
+
+defprotocol Socket.Protocol do
+  def accept(self)
+  def accept(self, options)
+
+  def options(self, opts)
+  def packet(self, type)
+
+  def active(self)
+  def active(self, mode)
+  def passive(self)
+
+  def local(self)
+  def remote(self)
+
+  def close(self)
+end
+
+defimpl Socket.Protocol, for: Port do
+  def accept(self) do
+    :prim_inet.accept(self)
+  end
+
+  def accept(self, options) do
+    :prim_inet.accept(self, options[:timeout])
+  end
+
+  def options(self, opts) do
+    :inet.setopts(self, Socket.arguments(opts))
+  end
+
+  def packet(self, type) do
+    :inet.setopts(self, packet: type)
+  end
+
+  def active(self) do
+    :inet.setopts(self, active: true)
+  end
+
+  def active(self, :once) do
+    :inet.setopts(self, active: :once)
+  end
+
+  def passive(self) do
+    :inet.setopts(self, active: false)
+  end
+
+  def local(self) do
+    :inet.sockname(self)
+  end
+
+  def remote(self) do
+    :inet.peername(self)
+  end
+
+  def close(self) do
+    :inet.close(self)
+  end
+end
+
+defimpl Socket.Protocol, for: Tuple do
+  def accept(self) when self |> is_record :sslsocket do
+    :ssl.transport_accept(self)
+  end
+
+  def accept(self, options) when self |> is_record :sslsocket do
+    :ssl.transport_accept(self, options[:timeout] || :infinity)
+  end
+
+  def options(self, opts) when self |> is_record :sslsocket do
+    Socket.SSL.options(self, opts)
+  end
+
+  def packet(self, type) when self |> is_record :sslsocket do
+    :ssl.setopts(self, packet: type)
+  end
+
+  def active(self) when self |> is_record :sslsocket do
+    :ssl.setopts(self, active: true)
+  end
+
+  def active(self, :once) when self |> is_record :sslsocket do
+    :ssl.setopts(self, active: :once)
+  end
+
+  def passive(self) when self |> is_record :sslsocket do
+    :ssl.setopts(self, active: false)
+  end
+
+  def local(self) when self |> is_record :sslsocket do
+    :ssl.sockname(self)
+  end
+
+  def remote(self) when self |> is_record :sslsocket do
+    :ssl.peername(self)
+  end
+
+  def close(self) when self |> is_record :sslsocket do
+    :ssl.close(self)
   end
 end

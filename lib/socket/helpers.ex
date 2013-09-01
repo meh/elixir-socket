@@ -1,0 +1,43 @@
+defmodule Socket.Helpers do
+  defmacro __using__(_opts) do
+    quote do
+      import Socket.Helpers
+    end
+  end
+
+  defmacro defbang({ name, _, args }) do
+    quote bind_quoted: [name: Macro.escape(name), args: Macro.escape(args)] do
+      def unquote(to_string(name) <> "!" |> binary_to_atom)(unquote_splicing(args)) do
+        case unquote(name)(unquote_splicing(args)) do
+          { :ok, result } ->
+            result
+
+          { :error, reason } ->
+            raise Socket.Error, reason: reason
+        end
+      end
+    end
+  end
+
+  defmacro defbang({ name, _, args }, to: mod) do
+    quote bind_quoted: [mod: Macro.escape(mod), name: Macro.escape(name), args: Macro.escape(args)] do
+      def unquote(to_string(name) <> "!" |> binary_to_atom)(unquote_splicing(args)) do
+        case unquote(mod).unquote(name)(unquote_splicing(args)) do
+          { :ok, result } ->
+            result
+
+          { :error, reason } ->
+            raise Socket.Error, reason: reason
+        end
+      end
+    end
+  end
+
+  defmacro defwrap({ name, _, [self | args] }) do
+    quote bind_quoted: [name: Macro.escape(name), self: Macro.escape(self), args: Macro.escape(args)] do
+      def unquote(name)(unquote(self), unquote_splicing(args)) do
+        unquote(self) |> elem(1) |> @protocol.unquote(name)(unquote_splicing(args))
+      end
+    end
+  end
+end

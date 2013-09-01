@@ -49,23 +49,32 @@ defmodule Socket.TCP do
 
       server = Socket.TCP.listen!(1337, packet: :line)
 
-      client = server.accept!
-      client.send!(client.recv!)
-      client.close
+      client = server |> Socket.Stream.accept!
+      client |> Socket.Stream.send!(client |> Socket.Stream.recv!)
+      client |> Socket.close
 
   """
 
-  defexception Error, code: nil do
-    @type t :: Error.t
+  use Socket.Helpers
 
-    def message(Error[code: code]) do
-      to_string(:inet.format_error(code))
-    end
-  end
-
-  @type t :: record
+  @opaque t :: record
 
   defrecordp :tcp, __MODULE__, socket: nil, manager: nil, reference: nil
+
+  @doc """
+  Return a proper error string for the given code or nil if it can't be
+  converted.
+  """
+  @spec error(term) :: String.t
+  def error(code) do
+    case :inet.format_error(code) do
+      'unknown POSIX error' ->
+        nil
+
+      message ->
+        message |> to_string
+    end
+  end
 
   @doc """
   Wrap an existing socket.
@@ -78,16 +87,23 @@ defmodule Socket.TCP do
   @doc """
   Create a TCP socket connecting to the given host and port tuple.
   """
-  @spec connect({ Socket.Address.t, :inet.port_number }) :: { :ok, t } | { :error, Error.t }
+  @spec connect({ Socket.Address.t, :inet.port_number }) :: { :ok, t } | { :error, Socket.Error.t }
   def connect({ address, port }) do
     connect(address, port)
   end
 
   @doc """
+  Create a TCP socket connecting to the given host and port tuple, raising if
+  an error occurs.
+  """
+  @spec connect({ Socket.Address.t, :inet.port_number }) :: t | no_return
+  defbang connect(descriptor)
+
+  @doc """
   Create a TCP socket connecting to the given host and port tuple and options,
   or to the given host and port.
   """
-  @spec connect({ Socket.Address.t, :inet.port_number } | Socket.Address.t, Keyword.t | :inet.port_number) :: { :ok, t } | { :error, Error.t }
+  @spec connect({ Socket.Address.t, :inet.port_number } | Socket.Address.t, Keyword.t | :inet.port_number) :: { :ok, t } | { :error, Socket.Error.t }
   def connect({ address, port }, options) when is_list(options) do
     connect(address, port, options)
   end
@@ -97,10 +113,16 @@ defmodule Socket.TCP do
   end
 
   @doc """
+  Create a TCP socket connecting to the given host and port tuple and options,
+  or to the given host and port, raising if an error occurs.
+  """
+  @spec connect({ Socket.Address.t, :inet.port_number } | Socket.Address.t, Keyword.t | :inet.port_number) :: t | no_return
+  defbang connect(address, port)
+
+  @doc """
   Create a TCP socket connecting to the given host and port.
   """
-  @spec connect(String.t | :inet.ip_address, :inet.port_number)            :: { :ok, t } | { :error, Error.t }
-  @spec connect(String.t | :inet.ip_address, :inet.port_number, Keyword.t) :: { :ok, t } | { :error, Error.t }
+  @spec connect(String.t | :inet.ip_address, :inet.port_number, Keyword.t) :: { :ok, t } | { :error, Socket.Error.t }
   def connect(address, port, options) do
     if is_binary(address) do
       address = String.to_char_list!(address)
@@ -111,7 +133,7 @@ defmodule Socket.TCP do
     case :gen_tcp.connect(address, port, arguments(options), options[:timeout] || :infinity) do
       { :ok, sock } ->
         reference = if options[:mode] == :passive and options[:automatic] != false do
-          :gen_tcp.controlling_process(sock, Process.whereis(Socket.Manager))
+          process(sock, Process.whereis(Socket.Manager))
 
           Finalizer.define({ :close, :tcp, sock }, Process.whereis(Socket.Manager))
         end
@@ -124,57 +146,33 @@ defmodule Socket.TCP do
   end
 
   @doc """
-  Create a TCP socket connecting to the given host and port tuple, raising if
-  an error occurs.
-  """
-  @spec connect!({ Socket.Address.t, :inet.port_number }) :: t | no_return
-  def connect!({ address, port }) do
-    connect!(address, port)
-  end
-
-  @doc """
-  Create a TCP socket connecting to the given host and port tuple and options,
-  or to the given host and port, raising if an error occurs.
-  """
-  @spec connect!({ Socket.Address.t, :inet.port_number } | Socket.Address.t, Keyword.t | :inet.port_number) :: t | no_return
-  def connect!({ address, port }, options) when is_list(options) do
-    connect!(address, port, options)
-  end
-
-  def connect!(address, port) when is_integer(port) do
-    connect!(address, port, [])
-  end
-
-  @doc """
   Create a TCP socket connecting to the given host and port, raising in case of
   error.
   """
-  @spec connect!(String.t | :inet.ip_address, :inet.port_number)            :: t | no_return
   @spec connect!(String.t | :inet.ip_address, :inet.port_number, Keyword.t) :: t | no_return
-  def connect!(address, port, options) do
-    case connect(address, port, options) do
-      { :ok, socket } ->
-        socket
-
-      { :error, code } ->
-        raise Error, code: code
-    end
-  end
+  defbang connect(address, port, options)
 
   @doc """
   Create a TCP socket listening on an OS chosen port, use `local` to know the
   port it was bound on.
   """
-  @spec listen :: { :ok, t } | { :error, Error.t }
+  @spec listen :: { :ok, t } | { :error, Socket.Error.t }
   def listen do
     listen(0, [])
   end
 
   @doc """
+  Create a TCP socket listening on an OS chosen port, use `local` to know the
+  port it was bound on, raising in case of error.
+  """
+  @spec listen! :: t | no_return
+  defbang listen
+
+  @doc """
   Create a TCP socket listening on an OS chosen port using the given options or
   listening on the given port.
   """
-  @spec listen(:inet.port_number | Keyword.t) :: { :ok, t } | { :error, Error.t }
+  @spec listen(:inet.port_number | Keyword.t) :: { :ok, t } | { :error, Socket.Error.t }
   def listen(port) when is_integer(port) do
     listen(port, [])
   end
@@ -184,9 +182,16 @@ defmodule Socket.TCP do
   end
 
   @doc """
+  Create a TCP socket listening on an OS chosen port using the given options or
+  listening on the given port, raising in case of error.
+  """
+  @spec listen!(:inet.port_number | Keyword.t) :: t | no_return
+  defbang listen(port_or_options)
+
+  @doc """
   Create a TCP socket listening on the given port and using the given options.
   """
-  @spec listen(:inet.port_number, Keyword.t) :: { :ok, t } | { :error, Error.t }
+  @spec listen(:inet.port_number, Keyword.t) :: { :ok, t } | { :error, Socket.Error.t }
   def listen(port, options) do
     options = Keyword.put(options, :mode, :passive)
     options = Keyword.put_new(options, :reuseaddr, true)
@@ -194,7 +199,7 @@ defmodule Socket.TCP do
     case :gen_tcp.listen(port, arguments(options)) do
       { :ok, sock } ->
         reference = if options[:mode] == :passive and options[:automatic] != false do
-          :gen_tcp.controlling_process(sock, Process.whereis(Socket.Manager))
+          process(sock, Process.whereis(Socket.Manager))
 
           Finalizer.define({ :close, :tcp, sock }, Process.whereis(Socket.Manager))
         end
@@ -207,54 +212,30 @@ defmodule Socket.TCP do
   end
 
   @doc """
-  Create a TCP socket listening on an OS chosen port, use `local` to know the
-  port it was bound on, raising in case of error.
-  """
-  @spec listen! :: t | no_return
-  def listen! do
-    listen!(0, [])
-  end
-
-  @doc """
-  Create a TCP socket listening on an OS chosen port using the given options or
-  listening on the given port, raising in case of error.
-  """
-  @spec listen!(:inet.port_number | Keyword.t) :: t | no_return
-  def listen!(port) when is_integer(port) do
-    listen!(port, [])
-  end
-
-  def listen!(options) do
-    listen!(0, options)
-  end
-
-  @doc """
   Create a TCP socket listening on the given port and using the given options,
   raising in case of error.
   """
   @spec listen!(:inet.port_number, Keyword.t) :: t | no_return
-  def listen!(port, options) do
-    case listen(port, options) do
-      { :ok, socket } ->
-        socket
-
-      { :error, code } ->
-        raise Error, code: code
-    end
-  end
+  defbang listen(port, options)
 
   @doc """
   Accept a new client from a listening socket, optionally passing options.
   """
-  @spec accept(t)            :: { :ok, t } | { :error, Error.t }
-  @spec accept(Keyword.t, t) :: { :ok, t } | { :error, Error.t }
-  def accept(options // [], tcp(socket: sock)) do
+  @spec accept(t | port)            :: { :ok, t } | { :error, Error.t }
+  @spec accept(t | port, Keyword.t) :: { :ok, t } | { :error, Error.t }
+  def accept(sock, options // [])
+
+  def accept(tcp(socket: sock), options) do
+    accept(sock, options)
+  end
+
+  def accept(sock, options) do
     options = Keyword.put_new(options, :mode, :passive)
 
     case :gen_tcp.accept(sock, options[:timeout] || :infinity) do
       { :ok, sock } ->
         reference = if options[:mode] == :passive and options[:automatic] != false do
-          :gen_tcp.controlling_process(sock, Process.whereis(Socket.Manager))
+          process(sock, Process.whereis(Socket.Manager))
 
           Finalizer.define({ :close, :tcp, sock }, Process.whereis(Socket.Manager))
         end
@@ -281,31 +262,28 @@ defmodule Socket.TCP do
   raising if an error occurs.
   """
   @spec accept!(t)            :: t | no_return
-  @spec accept!(Keyword.t, t) :: t | no_return
-  def accept!(options // [], self) do
-    case accept(options, self) do
-      { :ok, socket } ->
-        socket
-
-      { :error, code } ->
-        raise Error, code: code
-    end
-  end
+  @spec accept!(t, Keyword.t) :: t | no_return
+  defbang accept(self)
+  defbang accept(self, options)
 
   @doc """
   Set the process which will receive the messages.
   """
-  @spec process(pid, t) :: :ok | { :error, :closed | :not_owner | Error.t }
-  def process(pid, tcp(socket: sock)) do
+  @spec process(t | port, pid) :: :ok | { :error, :closed | :not_owner | Error.t }
+  def process(tcp(socket: sock), pid) do
+    process(sock, pid)
+  end
+
+  def process(sock, pid) do
     :gen_tcp.controlling_process(sock, pid)
   end
 
   @doc """
   Set the process which will receive the messages, raising if an error occurs.
   """
-  @spec process!(pid, t) :: :ok | no_return
-  def process!(pid, tcp(socket: sock)) do
-    case :gen_tcp.controlling_process(sock, pid) do
+  @spec process!(t | port, pid) :: :ok | no_return
+  def process!(sock, pid) do
+    case process(sock, pid) do
       :ok ->
         :ok
 
@@ -316,270 +294,35 @@ defmodule Socket.TCP do
         raise RuntimeError, message: "the current process isn't the owner"
 
       code ->
-        raise Error, code: code
+        raise Socket.Error, reason: code
     end
-  end
-
-  @doc """
-  Set the socket in active mode.
-  """
-  @spec active(t) :: none
-  def active(tcp(socket: sock)) do
-    :inet.setopts(sock, [{ :active, true }])
-  end
-
-  @doc """
-  Set the socket in active mode.
-  """
-  @spec active(:once, t) :: none
-  def active(:once, tcp(socket: sock)) do
-    :inet.setopts(sock, [{ :active, :once }])
-  end
-
-  @doc """
-  Set the socket in passive mode.
-  """
-  @spec passive(t) :: none
-  def passive(tcp(socket: sock)) do
-    :inet.setopts(sock, [{ :active, false }])
   end
 
   @doc """
   Set options of the socket.
   """
-  @spec options(Keyword.t, t) :: :ok | { :error, Error.t }
-  def options(opts, tcp(socket: sock)) do
-    :inet.setopts(sock, arguments(opts))
+  @spec options(t | Socket.SSL.t | port, Keyword.t) :: :ok | { :error, Socket.Error.t }
+  def options(tcp(socket: socket), options) do
+    options(socket, options)
+  end
+
+  def options(socket, options) when socket |> is_record Socket.SSL do
+    Socket.SSL.options(socket, options)
+  end
+
+  def options(socket, options) when socket |> is_record :sslsocket do
+    Socket.SSL.options(socket, options)
+  end
+
+  def options(socket, options) when socket |> is_port do
+    :inet.setopts(socket, arguments(options))
   end
 
   @doc """
   Set options of the socket, raising if an error occurs.
   """
-  @spec options!(Keyword.t, t) :: :ok | no_return
-  def options!(opts, self) do
-    case options(opts, self) do
-      :ok ->
-        :ok
-
-      { :error, code } ->
-        raise Error, code: code
-    end
-  end
-
-  @doc """
-  Set the type of packet to decode.
-  """
-  @spec packet(atom, t) :: :ok | { :error, Error.t }
-  def packet(type, tcp(socket: sock)) do
-    :inet.setopts(sock, [{ :packet, type }])
-  end
-
-  @doc """
-  Set the type of packet to decode, raising if an error occurs.
-  """
-  @spec packet!(atom, t) :: :ok | no_return
-  def packet!(type, self) do
-    case packet(type, self) do
-      :ok ->
-        :ok
-
-      { :error, code } ->
-        raise Error, code: code
-    end
-  end
-
-  @doc """
-  Return the local address and port.
-  """
-  @spec local(t) :: { :ok, { :inet.ip_address, :inet.port_number } } | { :error, Error.t }
-  def local(tcp(socket: sock)) do
-    :inet.sockname(sock)
-  end
-
-  @doc """
-  Return the local address and port, raising if an error occurs.
-  """
-  @spec local!(t) :: { :inet.ip_address, :inet.port_number } | no_return
-  def local!(tcp(socket: sock)) do
-    case :inet.sockname(sock) do
-      { :ok, result } ->
-        result
-
-      { :error, code } ->
-        raise Error, code: code
-    end
-  end
-
-  @doc """
-  Return the remote address and port.
-  """
-  @spec remote(t) :: { :ok, { :inet.ip_address, :inet.port_number } } | { :error, Error.t }
-  def remote(tcp(socket: sock)) do
-    :inet.peername(sock)
-  end
-
-  @doc """
-  Return the remote address and port, raising if an error occurs.
-  """
-  @spec remote!(t) :: { :inet.ip_address, :inet.port_number } | no_return
-  def remote!(tcp(socket: sock)) do
-    case :inet.peername(sock) do
-      { :ok, result } ->
-        result
-
-      { :error, code } ->
-        raise Error, code: code
-    end
-  end
-
-  @doc """
-  Send a packet through the socket.
-  """
-  @spec send(iodata, t) :: :ok | { :error, Error.t }
-  def send(value, tcp(socket: sock)) do
-    :gen_tcp.send(sock, value)
-  end
-
-  @doc """
-  Send a packet through the socket, raising if an error occurs.
-  """
-  @spec send!(iodata, t) :: :ok | no_return
-  def send!(value, self) do
-    case send(value, self) do
-      :ok ->
-        :ok
-
-      { :error, code } ->
-        raise Error, code: code
-    end
-  end
-
-  @doc """
-  Receive a packet from the socket, following the `:packet` option set at
-  creation.
-  """
-  @spec recv(t) :: { :ok, binary | char_list } | { :error, Error.t }
-  def recv(self) do
-    recv(0, self)
-  end
-
-  @doc """
-  Receive a packet from the socket, with either the given length or the given
-  options.
-  """
-  @spec recv(non_neg_integer | Keyword.t, t) :: { :ok, binary | char_list } | { :error, Error.t }
-  def recv(length, self) when is_integer(length) do
-    recv(length, [], self)
-  end
-
-  def recv(options, self) do
-    recv(0, options, self)
-  end
-
-  @doc """
-  Receive a packet from the socket with the given length and options.
-  """
-  @spec recv(non_neg_integer, Keyword.t, t) :: { :ok, binary | char_list } | { :error, Error.t }
-  def recv(length, options, tcp(socket: sock)) do
-    case :gen_tcp.recv(sock, length, options[:timeout] || :infinity) do
-      { :ok, _ } = ok ->
-        ok
-
-      { :error, :closed } ->
-        { :ok, nil }
-
-      { :error, _ } = error ->
-        error
-    end
-  end
-
-  @doc """
-  Receive a packet from the socket, following the `:packet` option set at
-  creation, raising if an error occurs.
-  """
-  @spec recv!(t) :: binary | char_list | no_return
-  def recv!(self) do
-    case recv(self) do
-      { :ok, packet } ->
-        packet
-
-      { :error, code } ->
-        raise Error, code: code
-    end
-  end
-
-  @doc """
-  Receive a packet from the socket, with either the given length or the given
-  options, raising if an error occurs.
-  """
-  @spec recv!(non_neg_integer | Keyword.t, t) :: binary | char_list | no_return
-  def recv!(length_or_options, self) do
-    case recv(length_or_options, self) do
-      { :ok, packet } ->
-        packet
-
-      { :error, code } ->
-        raise Error, code: code
-    end
-  end
-
-  @doc """
-  Receive a packet from the socket with the given length and options, raising
-  if an error occurs.
-  """
-  @spec recv!(non_neg_integer, Keyword.t, t) :: binary | char_list | no_return
-  def recv!(length, options, self) do
-    case recv(length, options, self) do
-      { :ok, packet } ->
-        packet
-
-      { :error, code } ->
-        raise Error, code: code
-    end
-  end
-
-  @doc """
-  Shutdown the socket for the given mode.
-  """
-  @spec shutdown(:read | :write | :both, t) :: :ok | { :error, Error.t }
-  def shutdown(how // :both, tcp(socket: sock)) do
-    :gen_tcp.shutdown(sock, case how do
-      :read  -> :read
-      :write -> :write
-      :both  -> :read_write
-    end)
-  end
-
-  @doc """
-  Shutdown the socket for the given mode, raising if an error occurs.
-  """
-  @spec shutdown!(:read | :write | :both, t) :: :ok | no_return
-  def shutdown!(how // :both, self) do
-    case shutdown(how, self) do
-      :ok ->
-        :ok
-
-      { :error, code } ->
-        raise Error, code: code
-    end
-  end
-
-  @doc """
-  Close the socket, if smart garbage collection is used, the socket will be
-  closed automatically when it's not referenced by anything.
-  """
-  @spec close(t) :: :ok
-  def close(tcp(socket: sock)) do
-    :gen_tcp.close(sock)
-  end
-
-  @doc """
-  Get the underlying port wrapped by the socket.
-  """
-  @spec to_port(t) :: port
-  def to_port(tcp(socket: sock)) do
-    sock
-  end
+  @spec options!(t | Socket.SSL.t | port, Keyword.t) :: :ok | no_return
+  defbang options(socket, options)
 
   @doc """
   Convert TCP options to `:inet.setopts` compatible arguments.
@@ -655,4 +398,36 @@ defmodule Socket.TCP do
 
     args
   end
+end
+
+defimpl Socket.Protocol, for: Socket.TCP do
+  use Socket.Helpers
+
+  defdelegate accept(self), to: @for
+  defdelegate accept(self, options), to: @for
+
+  defdelegate options(self, options), to: @for
+  defwrap packet(self, type)
+
+  defwrap active(self)
+  defwrap active(self, mode)
+  defwrap passive(self)
+
+  defwrap local(self)
+  defwrap remote(self)
+
+  defwrap close(self)
+end
+
+defimpl Socket.Stream.Protocol, for: Socket.TCP do
+  use Socket.Helpers
+
+  defwrap send(self, data)
+
+  defwrap recv(self)
+  defwrap recv(self, length_or_options)
+  defwrap recv(self, length, options)
+
+  defwrap shutdown(self)
+  defwrap shutdown(self, how)
 end

@@ -40,4 +40,16 @@ defmodule Socket.Helpers do
       end
     end
   end
+
+  defmacro definvalid({ name, _, args }) do
+    args = lc { _, meta, context } inlist args do
+      { :_, meta, context }
+    end
+
+    quote do
+      def unquote(name)(unquote_splicing(args)) do
+        { :error, :einval }
+      end
+    end
+  end
 end

@@ -228,13 +228,8 @@ end
 defimpl Socket.Protocol, for: Socket.UDP do
   use Socket.Helpers
 
-  def accept(_self) do
-    { :error, :einval }
-  end
-
-  def accept(_self, _options) do
-    { :error, :einval }
-  end
+  definvalid accept(self)
+  definvalid accept(self, options)
 
   defdelegate options(self, options), to: @for
   defwrap packet(self, type)

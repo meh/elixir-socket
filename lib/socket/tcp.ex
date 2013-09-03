@@ -104,11 +104,11 @@ defmodule Socket.TCP do
   or to the given host and port.
   """
   @spec connect({ Socket.Address.t, :inet.port_number } | Socket.Address.t, Keyword.t | :inet.port_number) :: { :ok, t } | { :error, Socket.Error.t }
-  def connect({ address, port }, options) when is_list(options) do
+  def connect({ address, port }, options) when options |> is_list do
     connect(address, port, options)
   end
 
-  def connect(address, port) when is_integer(port) do
+  def connect(address, port) when port |> is_integer do
     connect(address, port, [])
   end
 
@@ -173,11 +173,11 @@ defmodule Socket.TCP do
   listening on the given port.
   """
   @spec listen(:inet.port_number | Keyword.t) :: { :ok, t } | { :error, Socket.Error.t }
-  def listen(port) when is_integer(port) do
+  def listen(port) when port |> is_integer do
     listen(port, [])
   end
 
-  def listen(options) do
+  def listen(options) when options |> is_list do
     listen(0, options)
   end
 
@@ -192,7 +192,7 @@ defmodule Socket.TCP do
   Create a TCP socket listening on the given port and using the given options.
   """
   @spec listen(:inet.port_number, Keyword.t) :: { :ok, t } | { :error, Socket.Error.t }
-  def listen(port, options) do
+  def listen(port, options) when options |> is_list do
     options = Keyword.put(options, :mode, :passive)
     options = Keyword.put_new(options, :reuseaddr, true)
 

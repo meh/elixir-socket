@@ -257,6 +257,7 @@ end
 defprotocol Socket.Protocol do
   def options(self, opts)
   def packet(self, type)
+  def process(self, pid)
 
   def active(self)
   def active(self, mode)
@@ -275,6 +276,16 @@ defimpl Socket.Protocol, for: Port do
 
   def packet(self, type) do
     :inet.setopts(self, packet: type)
+  end
+
+  def process(self, pid) do
+    case :inet_db.lookup_socket(self) do
+      { :ok, mod } when mod in [:inet_tcp, :inet6_tcp] ->
+        :gen_tcp.controlling_process(self, pid)
+
+      { :ok, mod } when mod in [:inet_udp, :inet6_udp] ->
+        :gen_udp.controlling_process(self, pid)
+    end
   end
 
   def active(self) do
@@ -309,6 +320,10 @@ defimpl Socket.Protocol, for: Tuple do
 
   def packet(self, type) when self |> is_record :sslsocket do
     :ssl.setopts(self, packet: type)
+  end
+
+  def process(self, pid) when self |> is_record :sslsocket do
+    :ssl.controlling_process(self, pid)
   end
 
   def active(self) when self |> is_record :sslsocket do

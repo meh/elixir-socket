@@ -230,6 +230,7 @@ defimpl Socket.Protocol, for: Socket.UDP do
 
   defdelegate options(self, options), to: @for
   defwrap packet(self, type)
+  defdelegate process(self, pid), to: @for
 
   defwrap active(self)
   defwrap active(self, mode)

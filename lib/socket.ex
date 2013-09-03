@@ -221,12 +221,6 @@ defmodule Socket do
 
   use Socket.Helpers
 
-  defdelegate accept(self), to: Socket.Protocol
-  defbang accept(self), to: Socket.Protocol
-
-  defdelegate accept(self, options), to: Socket.Protocol
-  defbang accept(self, options), to: Socket.Protocol
-
   defdelegate options(self, opts), to: Socket.Protocol
   defbang options(self, opts), to: Socket.Protocol
 
@@ -261,9 +255,6 @@ defmodule Socket do
 end
 
 defprotocol Socket.Protocol do
-  def accept(self)
-  def accept(self, options)
-
   def options(self, opts)
   def packet(self, type)
 
@@ -278,14 +269,6 @@ defprotocol Socket.Protocol do
 end
 
 defimpl Socket.Protocol, for: Port do
-  def accept(self) do
-    :prim_inet.accept(self)
-  end
-
-  def accept(self, options) do
-    :prim_inet.accept(self, options[:timeout])
-  end
-
   def options(self, opts) do
     :inet.setopts(self, Socket.arguments(opts))
   end
@@ -320,14 +303,6 @@ defimpl Socket.Protocol, for: Port do
 end
 
 defimpl Socket.Protocol, for: Tuple do
-  def accept(self) when self |> is_record :sslsocket do
-    :ssl.transport_accept(self)
-  end
-
-  def accept(self, options) when self |> is_record :sslsocket do
-    :ssl.transport_accept(self, options[:timeout] || :infinity)
-  end
-
   def options(self, opts) when self |> is_record :sslsocket do
     Socket.SSL.options(self, opts)
   end

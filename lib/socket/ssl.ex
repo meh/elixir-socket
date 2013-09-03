@@ -585,9 +585,6 @@ end
 defimpl Socket.Protocol, for: Socket.SSL do
   use Socket.Helpers
 
-  defdelegate accept(self), to: @for
-  defdelegate accept(self, options), to: @for
-
   defdelegate options(self, options), to: @for
   defwrap packet(self, type)
 

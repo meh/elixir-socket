@@ -66,7 +66,11 @@ defimpl Socket.Stream.Protocol, for: Port do
   end
 
   def shutdown(self, how // :both) do
-    :gen_tcp.shutdown(self, how)
+    :gen_tcp.shutdown(self, case how do
+      :read  -> :read
+      :write -> :write
+      :both  -> :read_write
+    end)
   end
 end
 
@@ -101,6 +105,10 @@ defimpl Socket.Stream.Protocol, for: Tuple do
   end
 
   def shutdown(self, how // :both) do
-    :ssl.shutdown(self, how)
+    :ssl.shutdown(self, case how do
+      :read  -> :read
+      :write -> :write
+      :both  -> :read_write
+    end)
   end
 end

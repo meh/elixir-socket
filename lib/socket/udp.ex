@@ -230,6 +230,9 @@ defimpl Socket.Protocol, for: Socket.UDP do
 
   defwrap equal?(self, other)
 
+  definvalid accept(self)
+  definvalid accept(self, options)
+
   defdelegate options(self, options), to: @for
   defwrap packet(self, type)
   defdelegate process(self, pid), to: @for

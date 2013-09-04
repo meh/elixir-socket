@@ -259,6 +259,8 @@ end
 defprotocol Socket.Protocol do
   def equal?(self, other)
 
+  def accept(self, options // [])
+
   def options(self, opts)
   def packet(self, type)
   def process(self, pid)
@@ -280,6 +282,16 @@ defimpl Socket.Protocol, for: Port do
 
   def equal?(self, other) do
     self == elem(other, 1)
+  end
+
+  def accept(self, options // []) do
+    case :inet_db.lookup_socket(self) do
+      { :ok, mod } when mod in [:inet_tcp, :inet6_tcp] ->
+        Socket.TCP.accept(self, options)
+
+      { :ok, mod } when mod in [:inet_udp, :inet6_udp] ->
+        { :error, :einval }
+    end
   end
 
   def options(self, opts) do
@@ -336,6 +348,10 @@ defimpl Socket.Protocol, for: Tuple do
 
   def equal?(_, _) do
     false
+  end
+
+  def accept(self, options // []) when self |> is_record :sslsocket do
+    Socket.SSL.accept(self, options)
   end
 
   def options(self, opts) when self |> is_record :sslsocket do

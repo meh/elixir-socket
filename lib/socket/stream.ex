@@ -8,6 +8,7 @@
 
 defprotocol Socket.Stream.Protocol do
   def send(self, data)
+  def file(self, path, options // [])
 
   def recv(self)
   def recv(self, length_or_options)
@@ -21,6 +22,11 @@ defmodule Socket.Stream do
 
   defdelegate send(self, data), to: Socket.Stream.Protocol
   defbang     send(self, data), to: Socket.Stream.Protocol
+
+  defdelegate file(self, path), to: Socket.Stream.Protocol
+  defbang     file(self, path), to: Socket.Stream.Protocol
+  defdelegate file(self, path, options), to: Socket.Stream.Protocol
+  defbang     file(self, path, options), to: Socket.Stream.Protocol
 
   defdelegate recv(self), to: Socket.Stream.Protocol
   defbang     recv(self), to: Socket.Stream.Protocol
@@ -38,6 +44,19 @@ end
 defimpl Socket.Stream.Protocol, for: Port do
   def send(self, data) do
     :gen_tcp.send(self, data)
+  end
+
+  def file(self, path, options // []) do
+    cond do
+      options[:size] && options[:chunk_size] ->
+        :file.sendfile(path, self, options[:offset] || 0, options[:size], chunk_size: options[:chunk_size])
+
+      options[:size] ->
+        :file.sendfile(path, self, options[:offset] || 0, options[:size], [])
+
+      true ->
+        :file.sendfile(path, self)
+    end
   end
 
   def recv(self) do
@@ -77,6 +96,19 @@ end
 defimpl Socket.Stream.Protocol, for: Tuple do
   def send(self, data) when self |> is_record :sslsocket do
     :ssl.send(self, data)
+  end
+
+  def file(self, path, options // []) when self |> is_record :sslsocket do
+    cond do
+      options[:size] && options[:chunk_size] ->
+        :file.sendfile(path, self, options[:offset] || 0, options[:size], chunk_size: options[:chunk_size])
+
+      options[:size] ->
+        :file.sendfile(path, self, options[:offset] || 0, options[:size], [])
+
+      true ->
+        :file.sendfile(path, self)
+    end
   end
 
   def recv(self) when self |> is_record :sslsocket do

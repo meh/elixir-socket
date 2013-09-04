@@ -235,6 +235,9 @@ defmodule Socket do
   defdelegate packet(self, type), to: Socket.Protocol
   defbang packet(self, type), to: Socket.Protocol
 
+  defdelegate process(self, pid), to: Socket.Protocol
+  defbang process(self, pid), to: Socket.Protocol
+
   defdelegate active(self), to: Socket.Protocol
   defbang active(self), to: Socket.Protocol
 

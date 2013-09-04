@@ -223,6 +223,12 @@ defmodule Socket do
 
   defdelegate equal?(self, other), to: Socket.Protocol
 
+  defdelegate accept(self), to: Socket.Protocol
+  defbang accept(self), to: Socket.Protocol
+
+  defdelegate accept(self, options), to: Socket.Protocol
+  defbang accept(self, options), to: Socket.Protocol
+
   defdelegate options(self, opts), to: Socket.Protocol
   defbang options(self, opts), to: Socket.Protocol
 

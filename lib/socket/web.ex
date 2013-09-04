@@ -7,7 +7,7 @@
 #  0. You just DO WHAT THE FUCK YOU WANT TO.
 
 defmodule Socket.Web do
-  @moduledoc %B"""
+  @moduledoc %S"""
   This module implements RFC 6455 WebSockets.
 
   ## Examples
@@ -37,16 +37,16 @@ defmodule Socket.Web do
   @compile { :inline, opcode: 1, close_code: 1, key: 1, error: 1, length: 1, forge: 2 }
 
   Enum.each [ text: 0x1, binary: 0x2, close: 0x8, ping: 0x9, pong: 0xA ], fn { name, code } ->
-    defp :opcode, [name], [], do: code
-    defp :opcode, [code], [], do: name
+    defp opcode(unquote(name)), do: unquote(code)
+    defp opcode(unquote(code)), do: unquote(name)
   end
 
   Enum.each [ normal: 1000, going_away: 1001, protocol_error: 1002, unsupported_data: 1003,
               reserved: 1004, no_status_received: 1005, abnormal: 1006, invalid_payload: 1007,
               policy_violation: 1008, message_too_big: 1009, mandatory_extension: 1010,
               internal_error: 1011, handshake: 1015 ], fn { name, code } ->
-    defp :close_code, [name], [], do: code
-    defp :close_code, [code], [], do: name
+    defp close_code(unquote(name)), do: unquote(code)
+    defp close_code(unquote(code)), do: unquote(name)
   end
 
   defmacrop known?(n) do

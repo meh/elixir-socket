@@ -403,6 +403,8 @@ end
 defimpl Socket.Protocol, for: Socket.TCP do
   use Socket.Helpers
 
+  defwrap equal?(self, other)
+
   defdelegate options(self, options), to: @for
   defwrap packet(self, type)
   defdelegate process(self, pid), to: @for

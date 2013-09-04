@@ -221,6 +221,8 @@ defmodule Socket do
 
   use Socket.Helpers
 
+  defdelegate equal?(self, other), to: Socket.Protocol
+
   defdelegate options(self, opts), to: Socket.Protocol
   defbang options(self, opts), to: Socket.Protocol
 
@@ -255,6 +257,8 @@ defmodule Socket do
 end
 
 defprotocol Socket.Protocol do
+  def equal?(self, other)
+
   def options(self, opts)
   def packet(self, type)
   def process(self, pid)
@@ -270,6 +274,14 @@ defprotocol Socket.Protocol do
 end
 
 defimpl Socket.Protocol, for: Port do
+  def equal?(self, other) when other |> is_port do
+    self == other
+  end
+
+  def equal?(self, other) do
+    self == elem(other, 1)
+  end
+
   def options(self, opts) do
     :inet.setopts(self, Socket.arguments(opts))
   end
@@ -314,6 +326,18 @@ defimpl Socket.Protocol, for: Port do
 end
 
 defimpl Socket.Protocol, for: Tuple do
+  def equal?(self, other) when self |> is_record :sslsocket and other |> is_record :sslsocket do
+    self == other
+  end
+
+  def equal?(self, other) when self |> is_record :sslsocket and other |> is_record do
+    self == elem(other, 1)
+  end
+
+  def equal?(_, _) do
+    false
+  end
+
   def options(self, opts) when self |> is_record :sslsocket do
     Socket.SSL.options(self, opts)
   end

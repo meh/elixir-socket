@@ -403,34 +403,34 @@ end
 defimpl Socket.Protocol, for: Socket.TCP do
   use Socket.Helpers
 
-  defwrap equal?(self, other)
+  defwrap equal?(self, other), to: Port
 
   defdelegate accept(self), to: @for
   defdelegate accept(self, options), to: @for
 
   defdelegate options(self, options), to: @for
-  defwrap packet(self, type)
+  defwrap packet(self, type), to: Port
   defdelegate process(self, pid), to: @for
 
-  defwrap active(self)
-  defwrap active(self, mode)
-  defwrap passive(self)
+  defwrap active(self), to: Port
+  defwrap active(self, mode), to: Port
+  defwrap passive(self), to: Port
 
-  defwrap local(self)
-  defwrap remote(self)
+  defwrap local(self), to: Port
+  defwrap remote(self), to: Port
 
-  defwrap close(self)
+  defwrap close(self), to: Port
 end
 
 defimpl Socket.Stream.Protocol, for: Socket.TCP do
   use Socket.Helpers
 
-  defwrap send(self, data)
+  defwrap send(self, data), to: Port
 
-  defwrap recv(self)
-  defwrap recv(self, length_or_options)
-  defwrap recv(self, length, options)
+  defwrap recv(self), to: Port
+  defwrap recv(self, length_or_options), to: Port
+  defwrap recv(self, length, options), to: Port
 
-  defwrap shutdown(self)
-  defwrap shutdown(self, how)
+  defwrap shutdown(self), to: Port
+  defwrap shutdown(self, how), to: Port
 end

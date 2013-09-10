@@ -47,6 +47,15 @@ defmodule Socket.Helpers do
     end
   end
 
+  defmacro defwrap({ name, _, [self | args] }, to: instance) do
+    quote bind_quoted: [name: Macro.escape(name), self: Macro.escape(self), args: Macro.escape(args), instance: Macro.escape(instance)] do
+      def unquote(name)(unquote(self), unquote_splicing(args)) do
+        unquote(self) |> elem(1) |> @protocol.unquote(instance).unquote(name)(unquote_splicing(args))
+      end
+    end
+  end
+
+
   defmacro definvalid({ name, _, args }) do
     args = lc { _, meta, context } inlist args do
       { :_, meta, context }

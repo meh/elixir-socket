@@ -585,34 +585,34 @@ end
 defimpl Socket.Protocol, for: Socket.SSL do
   use Socket.Helpers
 
-  defwrap equal?(self, other)
+  defwrap equal?(self, other), to: Tuple
 
   defdelegate accept(self), to: @for
   defdelegate accept(self, options), to: @for
 
   defdelegate options(self, options), to: @for
-  defwrap packet(self, type)
+  defwrap packet(self, type), to: Tuple
   defdelegate process(self, pid), to: @for
 
-  defwrap active(self)
-  defwrap active(self, mode)
-  defwrap passive(self)
+  defwrap active(self), to: Tuple
+  defwrap active(self, mode), to: Tuple
+  defwrap passive(self), to: Tuple
 
-  defwrap local(self)
-  defwrap remote(self)
+  defwrap local(self), to: Tuple
+  defwrap remote(self), to: Tuple
 
-  defwrap close(self)
+  defwrap close(self), to: Tuple
 end
 
 defimpl Socket.Stream.Protocol, for: Socket.SSL do
   use Socket.Helpers
 
-  defwrap send(self, data)
+  defwrap send(self, data), to: Tuple
 
-  defwrap recv(self)
-  defwrap recv(self, length_or_options)
-  defwrap recv(self, length, options)
+  defwrap recv(self), to: Tuple
+  defwrap recv(self, length_or_options), to: Tuple
+  defwrap recv(self, length, options), to: Tuple
 
-  defwrap shutdown(self)
-  defwrap shutdown(self, how)
+  defwrap shutdown(self), to: Tuple
+  defwrap shutdown(self, how), to: Tuple
 end

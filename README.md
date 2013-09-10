@@ -22,20 +22,20 @@ defmodule HTTP do
 
   def get(URI.Info[host: host, port: port, path: path]) do
     sock = Socket.TCP.connect! host, port, packet: :line
-    sock.send "GET #{path || "/"} HTTP/1.1\r\nHost: #{host}\r\n\r\n"
+    sock |> Socket.Stream.send! "GET #{path || "/"} HTTP/1.1\r\nHost: #{host}\r\n\r\n"
 
-    [_, code, text] = Regex.run %r"HTTP/1.1 (.*?) (.*?)\s*$", sock.recv!
+    [_, code, text] = Regex.run %r"HTTP/1.1 (.*?) (.*?)\s*$", sock |> Socket.Stream.recv!
 
     headers = headers([], sock)
 
-    sock.options(packet: :raw)
-    body = sock.recv!(binary_to_integer(headers["Content-Length"]))
+    sock |> Socket.packet! :raw
+    body = sock |> Socket.Stream.recv!(binary_to_integer(headers["Content-Length"]))
 
     { { binary_to_integer(code), text }, headers, body }
   end
 
   defp headers(acc, sock) do
-    case sock.recv! do
+    case sock |> Socket.Stream.recv! do
       "\r\n" ->
         acc
 

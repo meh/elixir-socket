@@ -230,8 +230,6 @@ defmodule Socket.TCP do
   end
 
   def accept(sock, options) do
-    options = Keyword.put_new(options, :mode, :passive)
-
     case :gen_tcp.accept(sock, options[:timeout] || :infinity) do
       { :ok, sock } ->
         reference = if options[:mode] == :passive and options[:automatic] != false do
@@ -240,17 +238,21 @@ defmodule Socket.TCP do
           Finalizer.define({ :close, :tcp, sock }, Process.whereis(Socket.Manager))
         end
 
-        result = if options[:mode] == :active do
-          :inet.setopts(sock, [{ :active, true }])
-        else
-          :ok
+        case options[:mode] do
+          :active ->
+            :inet.setopts(sock, active: true)
+
+          :once ->
+            :inet.setopts(sock, active: :once)
+
+          :passive ->
+            :inet.setopts(sock, active: false)
+
+          nil ->
+            :ok
         end
 
-        if result == :ok do
-          { :ok, tcp(socket: sock, reference: reference) }
-        else
-          result
-        end
+        { :ok, tcp(socket: sock, reference: reference) }
 
       error ->
         error

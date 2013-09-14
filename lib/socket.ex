@@ -7,7 +7,7 @@
 #  0. You just DO WHAT THE FUCK YOU WANT TO.
 
 defmodule Socket do
-  @type t :: port | record
+  @type t :: Socket.Protocol.t
 
   defexception Error, reason: nil do
     @type t :: Error.t

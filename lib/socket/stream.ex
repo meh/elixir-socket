@@ -71,7 +71,16 @@ defmodule Socket.Stream do
   defbang     shutdown(self, how), to: Socket.Stream.Protocol
 
   @doc """
-  Read from the IO device and send to the socket until an EOF is encountered.
+  Read from the IO device and send to the socket following the given options.
+
+  ## Options
+
+    - `:size` is the amount of bytes to read from the IO device, if omitted it
+      will read until EOF
+    - `:offset` is the amount of bytes to read from the IO device before
+      starting to send what's being read
+    - `:chunk_size` is the size of the chunks read from the IO device at a time
+
   """
   @spec io(t, :io.device)            :: :ok | { :error, term }
   @spec io(t, :io.device, Keyword.t) :: :ok | { :error, term }

@@ -67,6 +67,49 @@ defmodule Socket.Stream do
   defbang     shutdown(self), to: Socket.Stream.Protocol
   defdelegate shutdown(self, how), to: Socket.Stream.Protocol
   defbang     shutdown(self, how), to: Socket.Stream.Protocol
+
+  def io(self, io, offset, size, chunk_size) do
+    case IO.binread(io, offset) do
+      :eof ->
+        :ok
+
+      { :error, _ } = error ->
+        error
+
+      _ ->
+        io(0, self, io, offset, size, chunk_size)
+    end
+  end
+
+  defp io(total, self, io, _offset, size, chunk_size) when total + chunk_size > size do
+    case IO.binread(io, size - total) do
+      :eof ->
+        :ok
+
+      { :error, _ } = error ->
+        error
+
+      data ->
+        self |> send(data)
+    end
+  end
+
+  defp io(total, self, io, offset, size, chunk_size) do
+    case IO.binread(io, chunk_size) do
+      :eof ->
+        :ok
+
+      { :error, _ } = error ->
+        error
+
+      data ->
+        self |> send(data)
+
+        io(total + chunk_size, self, io, offset, size, chunk_size)
+    end
+  end
+
+  defbang io(self, io, offset, size, chunk_size)
 end
 
 defimpl Socket.Stream.Protocol, for: Port do
@@ -129,13 +172,30 @@ defimpl Socket.Stream.Protocol, for: Tuple do
   def file(self, path, options // []) when self |> is_record :sslsocket do
     cond do
       options[:size] && options[:chunk_size] ->
-        :file.sendfile(path, self, options[:offset] || 0, options[:size], chunk_size: options[:chunk_size])
+        file(self, path, options[:offset] || 0, options[:size], options[:chunk_size])
 
       options[:size] ->
-        :file.sendfile(path, self, options[:offset] || 0, options[:size], [])
+        file(self, path, options[:offset] || 0, options[:size], 4096)
 
       true ->
-        :file.sendfile(path, self)
+        file(self, path, 0, -1, 4096)
+    end
+  end
+
+  defp file(self, path, offset, -1, chunk_size) when path |> is_binary do
+    file(self, path, offset, File.stat!(path).size, chunk_size)
+  end
+
+  defp file(self, path, offset, size, chunk_size) when path |> is_binary do
+    case File.open!(path, [:read], &Socket.Stream.io(self, &1, offset, size, chunk_size)) do
+      { :ok, :ok } ->
+        :ok
+
+      { :ok, { :error, _ } = error } ->
+        error
+
+      { :error, _ } = error ->
+        error
     end
   end
 

@@ -608,6 +608,8 @@ defimpl Socket.Stream.Protocol, for: Socket.SSL do
   use Socket.Helpers
 
   defwrap send(self, data), to: Tuple
+  defwrap file(self, path), to: Tuple
+  defwrap file(self, path, options), to: Tuple
 
   defwrap recv(self), to: Tuple
   defwrap recv(self, length_or_options), to: Tuple

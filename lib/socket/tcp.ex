@@ -428,6 +428,8 @@ defimpl Socket.Stream.Protocol, for: Socket.TCP do
   use Socket.Helpers
 
   defwrap send(self, data), to: Port
+  defwrap file(self, path), to: Port
+  defwrap file(self, path, options), to: Port
 
   defwrap recv(self), to: Port
   defwrap recv(self, length_or_options), to: Port

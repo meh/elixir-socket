@@ -68,6 +68,18 @@ defmodule Socket.Stream do
   defdelegate shutdown(self, how), to: Socket.Stream.Protocol
   defbang     shutdown(self, how), to: Socket.Stream.Protocol
 
+  def io(self, io) do
+    io(self, io, 0, -1, 4096)
+  end
+
+  def io(self, io, size) do
+    io(self, io, 0, size, 4096)
+  end
+
+  def io(self, io, size, chunk_size) do
+    io(self, io, 0, size, chunk_size)
+  end
+
   def io(self, io, offset, size, chunk_size) do
     case IO.binread(io, offset) do
       :eof ->
@@ -81,7 +93,7 @@ defmodule Socket.Stream do
     end
   end
 
-  defp io(total, self, io, _offset, size, chunk_size) when total + chunk_size > size do
+  defp io(total, self, io, _offset, size, chunk_size) when size > 0 and total + chunk_size > size do
     case IO.binread(io, size - total) do
       :eof ->
         :ok
@@ -109,6 +121,9 @@ defmodule Socket.Stream do
     end
   end
 
+  defbang io(self, io)
+  defbang io(self, io, size)
+  defbang io(self, io, size, chunk_size)
   defbang io(self, io, offset, size, chunk_size)
 end
 

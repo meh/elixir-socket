@@ -46,6 +46,8 @@ defprotocol Socket.Stream.Protocol do
 end
 
 defmodule Socket.Stream do
+  @type t :: Socket.Stream.Protocol.t
+
   use Socket.Helpers
 
   defdelegate send(self, data), to: Socket.Stream.Protocol
@@ -68,32 +70,29 @@ defmodule Socket.Stream do
   defdelegate shutdown(self, how), to: Socket.Stream.Protocol
   defbang     shutdown(self, how), to: Socket.Stream.Protocol
 
-  def io(self, io) do
-    io(self, io, 0, -1, 4096)
-  end
+  @doc """
+  Read from the IO device and send to the socket until an EOF is encountered.
+  """
+  @spec io(t, :io.device)            :: :ok | { :error, term }
+  @spec io(t, :io.device, Keyword.t) :: :ok | { :error, term }
+  def io(self, io, options // []) do
+    if offset = options[:offset] do
+      case IO.binread(io, offset) do
+        :eof ->
+          :ok
 
-  def io(self, io, size) do
-    io(self, io, 0, size, 4096)
-  end
+        { :error, _ } = error ->
+          error
 
-  def io(self, io, size, chunk_size) do
-    io(self, io, 0, size, chunk_size)
-  end
-
-  def io(self, io, offset, size, chunk_size) do
-    case IO.binread(io, offset) do
-      :eof ->
-        :ok
-
-      { :error, _ } = error ->
-        error
-
-      _ ->
-        io(0, self, io, offset, size, chunk_size)
+        _ ->
+          io(0, self, io, options[:size] || -1, options[:chunk_size] || 4096)
+      end
+    else
+      io(0, self, io, options[:size] || -1, options[:chunk_size] || 4096)
     end
   end
 
-  defp io(total, self, io, _offset, size, chunk_size) when size > 0 and total + chunk_size > size do
+  defp io(total, self, io, size, chunk_size) when size > 0 and total + chunk_size > size do
     case IO.binread(io, size - total) do
       :eof ->
         :ok
@@ -106,7 +105,7 @@ defmodule Socket.Stream do
     end
   end
 
-  defp io(total, self, io, offset, size, chunk_size) do
+  defp io(total, self, io, size, chunk_size) do
     case IO.binread(io, chunk_size) do
       :eof ->
         :ok
@@ -117,14 +116,12 @@ defmodule Socket.Stream do
       data ->
         self |> send(data)
 
-        io(total + chunk_size, self, io, offset, size, chunk_size)
+        io(total + chunk_size, self, io, size, chunk_size)
     end
   end
 
   defbang io(self, io)
-  defbang io(self, io, size)
-  defbang io(self, io, size, chunk_size)
-  defbang io(self, io, offset, size, chunk_size)
+  defbang io(self, io, options)
 end
 
 defimpl Socket.Stream.Protocol, for: Port do
@@ -202,7 +199,7 @@ defimpl Socket.Stream.Protocol, for: Tuple do
   end
 
   defp file(self, path, offset, size, chunk_size) when path |> is_binary do
-    case File.open!(path, [:read], &Socket.Stream.io(self, &1, offset, size, chunk_size)) do
+    case File.open!(path, [:read], &Socket.Stream.io(self, &1, offset: offset, size: size, chunk_size: chunk_size)) do
       { :ok, :ok } ->
         :ok
 

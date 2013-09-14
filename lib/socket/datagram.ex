@@ -7,10 +7,28 @@
 #  0. You just DO WHAT THE FUCK YOU WANT TO.
 
 defprotocol Socket.Datagram.Protocol do
+  @doc """
+  Send a packet to the given recipient.
+  """
+  @spec send(t, iodata, term) :: :ok | { :error, term }
   def send(self, data, to)
 
+  @doc """
+  Receive a packet from the socket.
+  """
+  @spec recv(t) :: { :ok, iodata } | { :error, term }
   def recv(self)
+
+  @doc """
+  Receive a packet with the given options or with the given size.
+  """
+  @spec recv(t, non_neg_integer | Keyword.t) :: { :ok, iodata } | { :error, term }
   def recv(self, length_or_options)
+
+  @doc """
+  Receive a packet with the given size and options.
+  """
+  @spec recv(t, non_neg_integer, Keyword.t) :: { :ok, iodata } | { :error, term }
   def recv(self, length, options)
 end
 

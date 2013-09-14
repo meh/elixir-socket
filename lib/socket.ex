@@ -266,21 +266,71 @@ defmodule Socket do
 end
 
 defprotocol Socket.Protocol do
+  @doc """
+  Check the two sockets are the same.
+  """
+  @spec equal?(t, t) :: boolean
   def equal?(self, other)
 
+  @doc """
+  Accept a connection from the socket.
+  """
+  @spec accept(t)            :: { :ok, t } | { :error, term }
+  @spec accept(t, Keyword.t) :: { :ok, t } | { :error, term }
   def accept(self, options // [])
 
+  @doc """
+  Set options for the socket.
+  """
+  @spec options(t, Keyword.t) :: :ok | { :error, term }
   def options(self, opts)
+
+  @doc """
+  Change the packet type of the socket.
+  """
+  @spec packet(t, atom) :: :ok | { :error, term }
   def packet(self, type)
+
+  @doc """
+  Change the controlling process of the socket.
+  """
+  @spec process(t, pid) :: :ok | { :error, term }
   def process(self, pid)
 
+  @doc """
+  Make the socket active.
+  """
+  @spec active(t) :: :ok | { :error, term }
   def active(self)
+
+  @doc """
+  Make the socket active once.
+  """
+  @spec active(t, :once) :: :ok | { :error, term }
   def active(self, mode)
+
+  @doc """
+  Make the socket passive.
+  """
+  @spec passive(t) :: :ok | { :error, term }
   def passive(self)
 
+  @doc """
+  Get the local address/port of the socket.
+  """
+  @spec local(t) :: { :ok, { Socket.Address.t, :inet.port_number } } | { :error, term }
   def local(self)
+
+  @doc """
+  Get the remote address/port of the socket.
+  """
+  @spec remote(t) :: { :ok, { Socket.Address.t, :inet.port_number } } | { :error, term }
   def remote(self)
 
+  @doc """
+  Close the socket.
+  """
+  @spec close(t) :: :ok | { :error, term }
   def close(self)
 end
 

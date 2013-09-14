@@ -7,13 +7,41 @@
 #  0. You just DO WHAT THE FUCK YOU WANT TO.
 
 defprotocol Socket.Stream.Protocol do
+  @doc """
+  Send data through the socket.
+  """
+  @spec send(t, iodata) :: :ok | { :error, term }
   def send(self, data)
+
+  @doc """
+  Send a file through the socket, using non-copying operations where available.
+  """
+  @spec file(t, String.t)            :: :ok | { :error, term }
+  @spec file(t, String.t, Keyword.t) :: :ok | { :error, term }
   def file(self, path, options // [])
 
+  @doc """
+  Receive data from the socket compatible with the packet type.
+  """
+  @spec recv(t) :: { :ok, term } | { :error, term }
   def recv(self)
+
+  @doc """
+  Receive data from the socket with the given length or options.
+  """
+  @spec recv(t, non_neg_integer | Keyword.t) :: { :ok, term } | { :error, term }
   def recv(self, length_or_options)
+
+  @doc """
+  Receive data from the socket with the given length and options.
+  """
+  @spec recv(t, non_neg_integer, Keyword.t) :: { :ok, term } | { :error, term }
   def recv(self, length, options)
 
+  @doc """
+  Shutdown the socket in the given mode, either `:both`, `:read`, or `:write`.
+  """
+  @spec shutdown(t, :both | :read | :write) :: :ok | { :error, term }
   def shutdown(self, how // :both)
 end
 

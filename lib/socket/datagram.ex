@@ -33,6 +33,8 @@ defprotocol Socket.Datagram.Protocol do
 end
 
 defmodule Socket.Datagram do
+  @type t :: Socket.Datagram.Protocol.t
+
   use Socket.Helpers
 
   defdelegate send(self, packet, to), to: Socket.Datagram.Protocol

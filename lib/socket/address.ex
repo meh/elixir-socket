@@ -32,6 +32,22 @@ defmodule Socket.Address do
   end
 
   @doc """
+  Convert an ip address tuple to a string.
+  """
+  @spec format(t) :: String.t
+  def format(address) when address |> is_binary do
+    address
+  end
+
+  def format(address) when address |> is_list do
+    address |> iolist_to_binary
+  end
+
+  def format(address) do
+    :inet.ntoa(address) |> iolist_to_binary
+  end
+
+  @doc """
   Get the addresses for the given host.
   """
   @spec for(t, :inet.address_family) :: { :ok, [t] } | { :error, :inet.posix }

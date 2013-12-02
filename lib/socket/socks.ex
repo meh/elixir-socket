@@ -1,0 +1,160 @@
+#            DO WHAT THE FUCK YOU WANT TO PUBLIC LICENSE
+#                    Version 2, December 2004
+#
+#            DO WHAT THE FUCK YOU WANT TO PUBLIC LICENSE
+#   TERMS AND CONDITIONS FOR COPYING, DISTRIBUTION AND MODIFICATION
+#
+#  0. You just DO WHAT THE FUCK YOU WANT TO.
+
+defmodule Socket.SOCKS do
+  def connect(to, through, options // []) do
+    [address, port | auth] = through |> tuple_to_list
+
+    case pre(address, port, options) do
+      { :ok, socket } ->
+        case handshake(socket, options[:version] || 5, auth |> list_to_tuple, to) do
+          :ok ->
+            case post(socket, options) do
+              :ok ->
+                { :ok, socket }
+
+              { :error, _ } = error ->
+                error
+            end
+
+          { :error, _ } = error ->
+            error
+        end
+
+      { :error, _ } = error ->
+        error
+    end
+  end
+
+  defbang connect(to, through)
+  defbang connect(to, through, options)
+
+  defp pre(address, port, options) do
+    if options[:mode] == :active || options[:mode] == :once do
+      options = options
+        |> Keyword.put(:mode, :passive)
+        |> Keyword.put(:automatic, false)
+    end
+
+    Socket.TCP.connect(address, port, options)
+  end
+
+  defp handshake(socket, 4, auth, { address, port }) do
+    user = if size(auth) >= 1 do
+      auth |> elem(0)
+    else
+      ""
+    end
+
+    case Socket.Address.parse(address) do
+      { a, b, c, d } ->
+        case socket |> Socket.Stream.send <<
+          # version
+          0x04 :: 8,
+
+          # make a stream TCP connection
+          0x01 :: 8,
+
+          # port in network byte order
+          port :: [size(16), big],
+
+          # IP address in network byte order
+          a :: 8,
+          b :: 8,
+          c :: 8,
+          d :: 8,
+
+          # user name followed by NULL
+          user :: binary,
+          0x00 :: 8 >> do
+            :ok ->
+              response(socket, 4)
+
+            { :error, _ } = error ->
+              error
+          end
+
+      nil ->
+        case socket |> Socket.Stream.send <<
+          # version
+          0x04 :: 8,
+
+          # make a stream TCP connection
+          0x01 :: 8,
+
+          # port in network byte order
+          port :: [size(16), big],
+
+          # invalid IP address
+          0x00 :: 8,
+          0x00 :: 8,
+          0x00 :: 8,
+          0xff :: 8,
+
+          # user name followed by NULL
+          user :: binary,
+          0x00 :: 8,
+
+          # host followed by NULL
+          address :: binary,
+          0x00    :: 8 >> do
+            :ok ->
+              response(socket, 4)
+
+            { :error, _ } = error ->
+              error
+          end
+    end
+  end
+
+  defp handshake(socket, 5, auth, { address, port }) do
+    { :error, :hue }
+  end
+
+  defp response(socket, 4) do
+    case socket |> Socket.Stream.recv(8) do
+      # request granted
+      { :ok, << 0x00 :: 8, 0x5a :: 8, _ :: 16, _ :: 32 >> } ->
+        :ok
+
+      # request rejected or failed
+      { :ok, << 0x00 :: 8, 0x5b :: 8, _ :: 16, _ :: 32 >> } ->
+        { :error, :rejected }
+
+      # request failed because client is not running identd (or not
+      # reachable from the server)
+      { :ok, << 0x00 :: 8, 0x5c :: 8, _ :: 16, _ :: 32 >> } ->
+        { :error, :unreachable }
+
+      # request failed because client's identd could not confirm the
+      # user ID string in the request
+      { :ok, << 0x00 :: 8, 0x5d :: 8, _ :: 16, _ :: 32 >> } ->
+        { :error, :unauthorized }
+
+      { :error, _ } = error ->
+        error
+    end
+  end
+
+  defp response(socket, 5) do
+    { :error, :hue }
+  end
+
+  defp post(socket, options) do
+    cond do
+      options[:mode] == :active ->
+        socket |> Socket.active
+
+      options[:mode] == :once ->
+        socket |> Socket.active(:once)
+
+      true ->
+        :ok
+    end
+  end
+end

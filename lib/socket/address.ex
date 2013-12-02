@@ -32,18 +32,26 @@ defmodule Socket.Address do
   end
 
   @doc """
+  Check if the passed string is a valid IP address.
+  """
+  @spec valid?(t) :: boolean
+  def valid?(text) do
+    not nil?(parse(text))
+  end
+
+  @doc """
   Convert an ip address tuple to a string.
   """
-  @spec format(t) :: String.t
-  def format(address) when address |> is_binary do
+  @spec to_string(t) :: String.t
+  def to_string(address) when address |> is_binary do
     address
   end
 
-  def format(address) when address |> is_list do
+  def to_string(address) when address |> is_list do
     address |> iolist_to_binary
   end
 
-  def format(address) do
+  def to_string(address) do
     :inet.ntoa(address) |> iolist_to_binary
   end
 

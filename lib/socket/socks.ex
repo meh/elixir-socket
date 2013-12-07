@@ -7,6 +7,8 @@
 #  0. You just DO WHAT THE FUCK YOU WANT TO.
 
 defmodule Socket.SOCKS do
+  use Socket.Helpers
+
   def connect(to, through, options // []) do
     [address, port | auth] = through |> tuple_to_list
 

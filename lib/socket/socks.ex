@@ -114,7 +114,7 @@ defmodule Socket.SOCKS do
     end
   end
 
-  defp handshake(socket, 5, auth, { address, port }) do
+  defp handshake(_socket, 5, _auth, { _address, _port }) do
     { :error, :hue }
   end
 
@@ -143,7 +143,7 @@ defmodule Socket.SOCKS do
     end
   end
 
-  defp response(socket, 5) do
+  defp response(_socket, 5) do
     { :error, :hue }
   end
 

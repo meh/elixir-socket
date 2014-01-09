@@ -410,7 +410,7 @@ defmodule Socket.Web do
     client = socket.accept!(options)
     client.packet!(:http_bin)
 
-    case client.recv! do
+    path = case client.recv! do
       { :http_request, :GET, { :abs_path, path }, _ } ->
         path
     end

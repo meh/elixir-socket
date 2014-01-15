@@ -49,6 +49,7 @@ defmodule Socket.Stream do
   @type t :: Socket.Stream.Protocol.t
 
   use Socket.Helpers
+  import Kernel, except: [send: 2]
 
   defdelegate send(self, data), to: Socket.Stream.Protocol
   defbang     send(self, data), to: Socket.Stream.Protocol

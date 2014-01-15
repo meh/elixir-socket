@@ -20,7 +20,7 @@ defmodule Socket.Web do
   """
 
   use    Bitwise
-  import Kernel, except: [length: 1]
+  import Kernel, except: [length: 1, send: 2]
 
   @type t :: record
 

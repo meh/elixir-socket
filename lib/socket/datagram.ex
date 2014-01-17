@@ -38,7 +38,7 @@ defmodule Socket.Datagram do
   use Socket.Helpers
 
   defdelegate send(self, packet, to), to: Socket.Datagram.Protocol
-  defbang send(self, packet, to), to: Socket.Stream.Protocol
+  defbang send(self, packet, to), to: Socket.Datagram.Protocol
 
   defdelegate recv(self), to: Socket.Datagram.Protocol
   defbang     recv(self), to: Socket.Datagram.Protocol

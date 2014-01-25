@@ -4,13 +4,6 @@ This library wraps `gen_tcp`, `gen_udp` and `gen_sctp`, `ssl` and implements
 websockets, it also implements smart garbage collection (if sockets aren't
 referenced anywhere, they are closed).
 
-Building outside of Mix
------------------------
-If you're cloning the repo, make sure to clone it to `socket` and not
-`elixir-socket`, or Mix will complain when compiling it.
-
-When used as dependency it won't be a problem, Mix will do the right thing.
-
 Examples
 --------
 

@@ -737,7 +737,7 @@ defmodule Socket.Web do
   """
   @spec send(packet, t)            :: :ok | { :error, error }
   @spec send(packet, Keyword.t, t) :: :ok | { :error, error }
-  def send(packet, options // [], self)
+  def send(packet, options \\ [], self)
 
   def send({ opcode, data }, options, web(socket: socket, version: 13, mask: mask)) when data?(opcode) and opcode != :close do
     socket.send(<< 1              :: 1,
@@ -772,7 +772,7 @@ defmodule Socket.Web do
   """
   @spec send!(packet, t)            :: :ok | no_return
   @spec send!(packet, Keyword.t, t) :: :ok | no_return
-  def send!(packet, options // [], self) do
+  def send!(packet, options \\ [], self) do
     case send(packet, options, self) do
       :ok ->
         :ok
@@ -787,7 +787,7 @@ defmodule Socket.Web do
   """
   @spec ping(t)         :: :ok | { :error, error }
   @spec ping(binary, t) :: :ok | { :error, error }
-  def ping(cookie // :crypt.rand_bytes(32), self) do
+  def ping(cookie \\ :crypt.rand_bytes(32), self) do
     case send({ :ping, cookie }, self) do
       :ok ->
         cookie
@@ -802,7 +802,7 @@ defmodule Socket.Web do
   """
   @spec ping!(t)         :: :ok | no_return
   @spec ping!(binary, t) :: :ok | no_return
-  def ping!(cookie // :crypt.rand_bytes(32), self) do
+  def ping!(cookie \\ :crypt.rand_bytes(32), self) do
     send!({ :ping, cookie }, self)
 
     cookie
@@ -843,7 +843,7 @@ defmodule Socket.Web do
   underlying socket.
   """
   @spec close(atom, Keyword.t, t) :: :ok | { :error, error }
-  def close(reason, options // [], web(socket: socket, version: 13, mask: mask) = self) do
+  def close(reason, options \\ [], web(socket: socket, version: 13, mask: mask) = self) do
     if is_tuple(reason) do
       { reason, data } = reason
     else

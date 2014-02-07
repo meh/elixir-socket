@@ -327,7 +327,7 @@ defmodule Socket.SSL do
   """
   @spec handshake(t)            :: :ok | { :error, term }
   @spec handshake(t, Keyword.t) :: :ok | { :error, term }
-  def handshake(sock, options // [])
+  def handshake(sock, options \\ [])
 
   def handshake(ssl(socket: sock), options) do
     handshake(sock, options)

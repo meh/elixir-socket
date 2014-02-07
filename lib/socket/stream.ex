@@ -18,7 +18,7 @@ defprotocol Socket.Stream.Protocol do
   """
   @spec file(t, String.t)            :: :ok | { :error, term }
   @spec file(t, String.t, Keyword.t) :: :ok | { :error, term }
-  def file(self, path, options // [])
+  def file(self, path, options \\ [])
 
   @doc """
   Receive data from the socket compatible with the packet type.
@@ -42,7 +42,7 @@ defprotocol Socket.Stream.Protocol do
   Shutdown the socket in the given mode, either `:both`, `:read`, or `:write`.
   """
   @spec shutdown(t, :both | :read | :write) :: :ok | { :error, term }
-  def shutdown(self, how // :both)
+  def shutdown(self, how \\ :both)
 end
 
 defmodule Socket.Stream do
@@ -85,7 +85,7 @@ defmodule Socket.Stream do
   """
   @spec io(t, :io.device)            :: :ok | { :error, term }
   @spec io(t, :io.device, Keyword.t) :: :ok | { :error, term }
-  def io(self, io, options // []) do
+  def io(self, io, options \\ []) do
     if offset = options[:offset] do
       case IO.binread(io, offset) do
         :eof ->
@@ -139,7 +139,7 @@ defimpl Socket.Stream.Protocol, for: Port do
     :gen_tcp.send(self, data)
   end
 
-  def file(self, path, options // []) do
+  def file(self, path, options \\ []) do
     cond do
       options[:size] && options[:chunk_size] ->
         :file.sendfile(path, self, options[:offset] || 0, options[:size], chunk_size: options[:chunk_size])
@@ -177,7 +177,7 @@ defimpl Socket.Stream.Protocol, for: Port do
     end
   end
 
-  def shutdown(self, how // :both) do
+  def shutdown(self, how \\ :both) do
     :gen_tcp.shutdown(self, case how do
       :read  -> :read
       :write -> :write
@@ -191,7 +191,7 @@ defimpl Socket.Stream.Protocol, for: Tuple do
     :ssl.send(self, data)
   end
 
-  def file(self, path, options // []) when self |> is_record :sslsocket do
+  def file(self, path, options \\ []) when self |> is_record :sslsocket do
     cond do
       options[:size] && options[:chunk_size] ->
         file(self, path, options[:offset] || 0, options[:size], options[:chunk_size])
@@ -246,7 +246,7 @@ defimpl Socket.Stream.Protocol, for: Tuple do
     end
   end
 
-  def shutdown(self, how // :both) do
+  def shutdown(self, how \\ :both) do
     :ssl.shutdown(self, case how do
       :read  -> :read
       :write -> :write

@@ -223,7 +223,7 @@ defmodule Socket.TCP do
   """
   @spec accept(t | port)            :: { :ok, t } | { :error, Error.t }
   @spec accept(t | port, Keyword.t) :: { :ok, t } | { :error, Error.t }
-  def accept(sock, options // [])
+  def accept(sock, options \\ [])
 
   def accept(tcp(socket: sock), options) do
     accept(sock, options)

@@ -277,7 +277,7 @@ defprotocol Socket.Protocol do
   """
   @spec accept(t)            :: { :ok, t } | { :error, term }
   @spec accept(t, Keyword.t) :: { :ok, t } | { :error, term }
-  def accept(self, options // [])
+  def accept(self, options \\ [])
 
   @doc """
   Set options for the socket.
@@ -343,7 +343,7 @@ defimpl Socket.Protocol, for: Port do
     self == elem(other, 1)
   end
 
-  def accept(self, options // []) do
+  def accept(self, options \\ []) do
     case :inet_db.lookup_socket(self) do
       { :ok, mod } when mod in [:inet_tcp, :inet6_tcp] ->
         Socket.TCP.accept(self, options)
@@ -409,7 +409,7 @@ defimpl Socket.Protocol, for: Tuple do
     false
   end
 
-  def accept(self, options // []) when self |> is_record :sslsocket do
+  def accept(self, options \\ []) when self |> is_record :sslsocket do
     Socket.SSL.accept(self, options)
   end
 

@@ -9,7 +9,7 @@
 defmodule Socket.SOCKS do
   use Socket.Helpers
 
-  def connect(to, through, options // []) do
+  def connect(to, through, options \\ []) do
     [address, port | auth] = through |> tuple_to_list
 
     case pre(address, port, options) do

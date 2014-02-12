@@ -7,7 +7,7 @@
 #  0. You just DO WHAT THE FUCK YOU WANT TO.
 
 defmodule Socket.Web do
-  @moduledoc %S"""
+  @moduledoc ~S"""
   This module implements RFC 6455 WebSockets.
 
   ## Examples
@@ -430,11 +430,11 @@ defmodule Socket.Web do
     end
 
     protocols = if p = headers["sec-websocket-protocol"] do
-      String.split(p, %r/\s*,\s*/)
+      String.split(p, ~r/\s*,\s*/)
     end
 
     extensions = if e = headers["sec-websocket-extensions"] do
-      String.split(e, %r/\s*,\s*/)
+      String.split(e, ~r/\s*,\s*/)
     end
 
     client.packet!(:raw)

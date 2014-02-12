@@ -26,7 +26,7 @@ defmodule Socket do
     end
   end
 
-  @doc %S"""
+  @doc ~S"""
   Create a socket connecting to somewhere using an URI.
 
   ## Supported URIs

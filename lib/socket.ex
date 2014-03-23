@@ -7,6 +7,16 @@
 #  0. You just DO WHAT THE FUCK YOU WANT TO.
 
 defmodule Socket do
+  use Application.Behaviour
+
+  def start(_, _) do
+    Socket.Supervisor.start_link
+  end
+
+  def stop(_) do
+    :ok
+  end
+
   @type t :: Socket.Protocol.t
 
   defexception Error, reason: nil do

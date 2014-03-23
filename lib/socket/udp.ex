@@ -100,9 +100,9 @@ defmodule Socket.UDP do
     case :gen_udp.open(port, arguments(options)) do
       { :ok, sock } ->
         reference = if options[:mode] == :passive and options[:automatic] != false do
-          :gen_udp.controlling_process(sock, Process.whereis(Socket.Manager))
+          :gen_udp.controlling_process(sock, Process.whereis(:socket))
 
-          Finalizer.define({ :close, :udp, sock }, Process.whereis(Socket.Manager))
+          Finalizer.define({ :close, :udp, sock }, Process.whereis(:socket))
         end
 
         { :ok, udp(socket: sock, reference: reference) }

@@ -8,7 +8,6 @@ defmodule Socket.Mixfile do
       deps: deps ]
   end
 
-  # Configuration for the OTP application
   def application do
     if System.get_env("ELIXIR_NO_NIF") do
       [ applications: [:crypto, :ssl] ]
@@ -18,8 +17,6 @@ defmodule Socket.Mixfile do
     end
   end
 
-  # Returns the list of dependencies in the format:
-  # { :foobar, "0.1", git: "https://github.com/elixir-lang/foobar.git" }
   defp deps do
     if System.get_env("ELIXIR_NO_NIF") do
       []

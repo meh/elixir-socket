@@ -7,15 +7,10 @@
 #  0. You just DO WHAT THE FUCK YOU WANT TO.
 
 defmodule Socket.Manager do
-  use Application.Behaviour
   use GenServer.Behaviour
 
-  def start(_, _) do
-    :gen_server.start_link({ :local, __MODULE__ }, __MODULE__, [], [])
-  end
-
-  def stop(_) do
-    :gen_server.cast(__MODULE__, :stop)
+  def start_link(_args \\ []) do
+    :gen_server.start_link({ :local, :socket }, __MODULE__, [], [])
   end
 
   def handle_info({ :close, socket }, _state) do

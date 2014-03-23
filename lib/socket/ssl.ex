@@ -154,9 +154,9 @@ defmodule Socket.SSL do
     case :ssl.connect(address, port, arguments(options), options[:timeout] || :infinity) do
       { :ok, sock } ->
         reference = if options[:mode] == :passive and options[:automatic] != false do
-          process(sock, Process.whereis(Socket.Manager))
+          process(sock, Process.whereis(:socket))
 
-          Finalizer.define({ :close, :ssl, sock }, Process.whereis(Socket.Manager))
+          Finalizer.define({ :close, :ssl, sock }, Process.whereis(:socket))
         end
 
         { :ok, ssl(socket: sock, reference: reference) }
@@ -220,9 +220,9 @@ defmodule Socket.SSL do
     case :ssl.listen(port, arguments(options)) do
       { :ok, sock } ->
         reference = if options[:mode] == :passive and options[:automatic] != false do
-          :ssl.controlling_process(sock, Process.whereis(Socket.Manager))
+          :ssl.controlling_process(sock, Process.whereis(:socket))
 
-          Finalizer.define({ :close, :ssl, sock }, Process.whereis(Socket.Manager))
+          Finalizer.define({ :close, :ssl, sock }, Process.whereis(:socket))
         end
 
         { :ok, ssl(socket: sock, reference: reference) }
@@ -270,9 +270,9 @@ defmodule Socket.SSL do
     case :ssl.transport_accept(sock, options[:timeout] || :infinity) do
       { :ok, sock } ->
         reference = if options[:mode] == :active or (options[:mode] == :passive and options[:automatic] != false) do
-          :ssl.controlling_process(sock, Process.whereis(Socket.Manager))
+          :ssl.controlling_process(sock, Process.whereis(:socket))
 
-          Finalizer.define({ :close, :ssl, sock }, Process.whereis(Socket.Manager))
+          Finalizer.define({ :close, :ssl, sock }, Process.whereis(:socket))
         end
 
         result = if options[:mode] == :active do

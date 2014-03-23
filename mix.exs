@@ -13,7 +13,7 @@ defmodule Socket.Mixfile do
       [ applications: [:crypto, :ssl] ]
     else
       [ applications: [:finalizer, :crypto, :ssl],
-        mod: { Socket.Manager, [] } ]
+        mod: { Socket, [] } ]
     end
   end
 

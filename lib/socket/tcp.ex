@@ -133,9 +133,9 @@ defmodule Socket.TCP do
     case :gen_tcp.connect(address, port, arguments(options), options[:timeout] || :infinity) do
       { :ok, sock } ->
         reference = if options[:mode] == :passive and options[:automatic] != false do
-          process(sock, Process.whereis(Socket.Manager))
+          process(sock, Process.whereis(:socket))
 
-          Finalizer.define({ :close, :tcp, sock }, Process.whereis(Socket.Manager))
+          Finalizer.define({ :close, :tcp, sock }, Process.whereis(:socket))
         end
 
         { :ok, tcp(socket: sock, reference: reference) }
@@ -199,9 +199,9 @@ defmodule Socket.TCP do
     case :gen_tcp.listen(port, arguments(options)) do
       { :ok, sock } ->
         reference = if options[:mode] == :passive and options[:automatic] != false do
-          process(sock, Process.whereis(Socket.Manager))
+          process(sock, Process.whereis(:socket))
 
-          Finalizer.define({ :close, :tcp, sock }, Process.whereis(Socket.Manager))
+          Finalizer.define({ :close, :tcp, sock }, Process.whereis(:socket))
         end
 
         { :ok, tcp(socket: sock, reference: reference) }
@@ -233,9 +233,9 @@ defmodule Socket.TCP do
     case :gen_tcp.accept(sock, options[:timeout] || :infinity) do
       { :ok, sock } ->
         reference = if options[:mode] == :passive and options[:automatic] != false do
-          process(sock, Process.whereis(Socket.Manager))
+          process(sock, Process.whereis(:socket))
 
-          Finalizer.define({ :close, :tcp, sock }, Process.whereis(Socket.Manager))
+          Finalizer.define({ :close, :tcp, sock }, Process.whereis(:socket))
         end
 
         case options[:mode] do

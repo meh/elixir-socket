@@ -13,7 +13,7 @@ defmodule Socket.SSL do
 
   ## Options
 
-  When creating a socket you can pass a serie of options to use for it.
+  When creating a socket you can pass a series of options to use for it.
 
   * `:cert` can either be an encoded certificate or `[path:
     "path/to/certificate"]`

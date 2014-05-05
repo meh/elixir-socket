@@ -44,24 +44,24 @@ defmodule Socket do
       client.recv
 
   """
-  @spec connect(String.t | URI.Info.t) :: { :ok, Socket.t } | { :error, any }
+  @spec connect(String.t | URI.t) :: { :ok, Socket.t } | { :error, any }
   def connect(uri) when is_list(uri) or is_binary(uri) do
     connect(URI.parse(uri))
   end
 
-  def connect(URI.Info[scheme: "tcp", host: host, port: port]) do
+  def connect(%URI{scheme: "tcp", host: host, port: port}) do
     Socket.TCP.connect(host, port)
   end
 
-  def connect(URI.Info[scheme: "ssl", host: host, port: port]) do
+  def connect(%URI{scheme: "ssl", host: host, port: port}) do
     Socket.SSL.connect(host, port)
   end
 
-  def connect(URI.Info[scheme: "ws", host: host, port: port, path: path]) do
+  def connect(%URI{scheme: "ws", host: host, port: port, path: path}) do
     Socket.Web.connect(host, port, path)
   end
 
-  def connect(URI.Info[scheme: "wss", host: host, port: port, path: path]) do
+  def connect(%URI{scheme: "wss", host: host, port: port, path: path}) do
     Socket.Web.connect(host, port, path, secure: true)
   end
 
@@ -69,24 +69,24 @@ defmodule Socket do
   Create a socket connecting to somewhere using an URI, raising if an error
   occurs, see `connect`.
   """
-  @spec connect!(String.t | URI.Info.t) :: Socket.t | no_return
+  @spec connect!(String.t | URI.t) :: Socket.t | no_return
   def connect!(uri) when is_list(uri) or is_binary(uri) do
     connect!(URI.parse(uri))
   end
 
-  def connect!(URI.Info[scheme: "tcp", host: host, port: port]) do
+  def connect!(%URI{scheme: "tcp", host: host, port: port}) do
     Socket.TCP.connect!(host, port)
   end
 
-  def connect!(URI.Info[scheme: "ssl", host: host, port: port]) do
+  def connect!(%URI{scheme: "ssl", host: host, port: port}) do
     Socket.SSL.connect!(host, port)
   end
 
-  def connect!(URI.Info[scheme: "ws", host: host, port: port, path: path]) do
+  def connect!(%URI{scheme: "ws", host: host, port: port, path: path}) do
     Socket.Web.connect!(host, port, path)
   end
 
-  def connect!(URI.Info[scheme: "wss", host: host, port: port, path: path]) do
+  def connect!(%URI{scheme: "wss", host: host, port: port, path: path}) do
     Socket.Web.connect!(host, port, path, secure: true)
   end
 
@@ -111,24 +111,24 @@ defmodule Socket do
       client.close
 
   """
-  @spec listen(String.t | URI.Info.t) :: { :ok, Socket.t } | { :error, any }
+  @spec listen(String.t | URI.t) :: { :ok, Socket.t } | { :error, any }
   def listen(uri) when is_list(uri) or is_binary(uri) do
     listen(URI.parse(uri))
   end
 
-  def listen(URI.Info[scheme: "tcp", host: host, port: port]) do
+  def listen(%URI{scheme: "tcp", host: host, port: port}) do
     Socket.TCP.listen(port, local: [address: if(host == "*", do: "0.0.0.0", else: host)])
   end
 
-  def listen(URI.Info[scheme: "ssl", host: host, port: port]) do
+  def listen(%URI{scheme: "ssl", host: host, port: port}) do
     Socket.SSL.listen(port, local: [address: if(host == "*", do: "0.0.0.0", else: host)])
   end
 
-  def listen(URI.Info[scheme: "ws", host: host, port: port]) do
+  def listen(%URI{scheme: "ws", host: host, port: port}) do
     Socket.Web.listen(port, local: [address: if(host == "*", do: "0.0.0.0", else: host)])
   end
 
-  def listen(URI.Info[scheme: "wss", host: host, port: port]) do
+  def listen(%URI{scheme: "wss", host: host, port: port}) do
     Socket.Web.listen(port, secure: true, local: [address: if(host == "*", do: "0.0.0.0", else: host)])
   end
 
@@ -136,24 +136,24 @@ defmodule Socket do
   Create a socket listening somewhere using an URI, raising if an error occurs,
   see `listen`.
   """
-  @spec listen!(String.t | URI.Info.t) :: Socket.t | no_return
+  @spec listen!(String.t | URI.t) :: Socket.t | no_return
   def listen!(uri) when is_list(uri) or is_binary(uri) do
     listen!(URI.parse(uri))
   end
 
-  def listen!(URI.Info[scheme: "tcp", host: host, port: port]) do
+  def listen!(%URI{scheme: "tcp", host: host, port: port}) do
     Socket.TCP.listen!(port, local: [address: if(host == "*", do: "0.0.0.0", else: host)])
   end
 
-  def listen!(URI.Info[scheme: "ssl", host: host, port: port]) do
+  def listen!(%URI{scheme: "ssl", host: host, port: port}) do
     Socket.SSL.listen!(port, local: [address: if(host == "*", do: "0.0.0.0", else: host)])
   end
 
-  def listen!(URI.Info[scheme: "ws", host: host, port: port]) do
+  def listen!(%URI{scheme: "ws", host: host, port: port}) do
     Socket.Web.listen!(port, local: [address: if(host == "*", do: "0.0.0.0", else: host)])
   end
 
-  def listen!(URI.Info[scheme: "wss", host: host, port: port]) do
+  def listen!(%URI{scheme: "wss", host: host, port: port}) do
     Socket.Web.listen!(port, secure: true, local: [address: if(host == "*", do: "0.0.0.0", else: host)])
   end
 

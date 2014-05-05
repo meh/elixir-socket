@@ -17,8 +17,6 @@ defmodule Socket.UDP do
   * `:as` sets the kind of value returned by recv, either `:binary` or `:list`,
     the default is `:binary`.
   * `:mode` can be either `:passive` or `:active`, default is `:passive`
-  * `:automatic` tells it whether to use smart garbage collection or not, when
-    passive the default is `true`, when active the default is `false`
   * `:local` must be a keyword list
     - `:address` the local address to use
     - `:fd` an already opened file descriptor to use
@@ -41,19 +39,9 @@ defmodule Socket.UDP do
 
   """
 
-  @type t :: record
-
-  defrecordp :udp, __MODULE__, socket: nil, reference: nil
+  @type t :: port
 
   use Socket.Helpers
-
-  @doc """
-  Wrap an existing socket.
-  """
-  @spec wrap(port) :: t
-  def wrap(port) do
-    udp(socket: port)
-  end
 
   @doc """
   Create a UDP socket listening on an OS chosen port, use `local` to know the
@@ -97,19 +85,7 @@ defmodule Socket.UDP do
   def open(port, options) do
     options = Keyword.put_new(options, :mode, :passive)
 
-    case :gen_udp.open(port, arguments(options)) do
-      { :ok, sock } ->
-        reference = if options[:mode] == :passive and options[:automatic] != false do
-          :gen_udp.controlling_process(sock, Process.whereis(Socket.Manager))
-
-          Finalizer.define({ :close, :udp, sock }, Process.whereis(Socket.Manager))
-        end
-
-        { :ok, udp(socket: sock, reference: reference) }
-
-      error ->
-        error
-    end
+    :gen_udp.open(port, arguments(options))
   end
 
   @doc """
@@ -123,10 +99,6 @@ defmodule Socket.UDP do
   Set the process which will receive the messages.
   """
   @spec process(t | port, pid) :: :ok | { :error, :closed | :not_owner | Error.t }
-  def process(udp(socket: sock), pid) do
-    process(sock, pid)
-  end
-
   def process(sock, pid) when sock |> is_port do
     :gen_udp.controlling_process(sock, pid)
   end
@@ -155,10 +127,6 @@ defmodule Socket.UDP do
   Set options of the socket.
   """
   @spec options(t, Keyword.t) :: :ok | { :error, Error.t }
-  def options(udp(socket: sock), opts) do
-    options(sock, opts)
-  end
-
   def options(sock, opts) when sock |> is_port do
     :inet.setopts(sock, arguments(opts))
   end
@@ -223,36 +191,4 @@ defmodule Socket.UDP do
 
     args
   end
-end
-
-defimpl Socket.Protocol, for: Socket.UDP do
-  use Socket.Helpers
-
-  defwrap equal?(self, other), to: Port
-
-  definvalid accept(self)
-  definvalid accept(self, options)
-
-  defdelegate options(self, options), to: @for
-  defwrap packet(self, type), to: Port
-  defdelegate process(self, pid), to: @for
-
-  defwrap active(self), to: Port
-  defwrap active(self, mode), to: Port
-  defwrap passive(self), to: Port
-
-  defwrap local(self), to: Port
-  defwrap remote(self), to: Port
-
-  defwrap close(self), to: Port
-end
-
-defimpl Socket.Datagram.Protocol, for: Socket.UDP do
-  use Socket.Helpers
-
-  defwrap send(self, data, to), to: Port
-
-  defwrap recv(self), to: Port
-  defwrap recv(self, length_or_options), to: Port
-  defwrap recv(self, length, options), to: Port
 end

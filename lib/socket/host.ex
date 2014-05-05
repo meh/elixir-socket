@@ -6,7 +6,13 @@
 #
 #  0. You just DO WHAT THE FUCK YOU WANT TO.
 
-defrecord Socket.Host, [:name, :aliases, :type, :length, :list] do
+defmodule Socket.Host do
+  defstruct [:name, :aliases, :type, :length, :list]
+
+  defp convert({ _, name, aliases, type, length, list }) do
+    %Socket.Host{name: name, aliases: aliases, type: type, length: length, list: list}
+  end
+
   @doc """
   Get the hostent by address.
   """
@@ -14,7 +20,7 @@ defrecord Socket.Host, [:name, :aliases, :type, :length, :list] do
   def by_address(address) do
     case :inet.gethostbyaddr(Socket.Address.parse(address)) do
       { :ok, host } ->
-        { :ok, set_elem(host, 0, Socket.Host) }
+        { :ok, convert(host) }
 
       error ->
         error
@@ -28,7 +34,7 @@ defrecord Socket.Host, [:name, :aliases, :type, :length, :list] do
   def by_address!(address) do
     case :inet.gethostbyaddr(Socket.Address.parse(address)) do
       { :ok, host } ->
-        set_elem(host, 0, Socket.Host)
+        convert(host)
 
       { :error, code } ->
         raise PosixError, code: code
@@ -41,12 +47,12 @@ defrecord Socket.Host, [:name, :aliases, :type, :length, :list] do
   @spec by_name(binary | char_list) :: { :ok, t } | { :error, :inet.posix }
   def by_name(name) do
     if is_binary(name) do
-      name = String.to_char_list!(name)
+      name = List.from_char_data!(name)
     end
 
     case :inet.gethostbyname(name) do
       { :ok, host } ->
-        { :ok, set_elem(host, 0, Socket.Host) }
+        { :ok, convert(host) }
 
       error ->
         error
@@ -59,12 +65,12 @@ defrecord Socket.Host, [:name, :aliases, :type, :length, :list] do
   @spec by_name(binary | char_list, :inet.address_family) :: { :ok, t } | { :error, :inet.posix }
   def by_name(name, family) do
     if is_binary(name) do
-      name = String.to_char_list!(name)
+      name = List.from_char_data!(name)
     end
 
     case :inet.gethostbyname(name, family) do
       { :ok, host } ->
-        { :ok, set_elem(host, 0, Socket.Host) }
+        { :ok, convert(host) }
 
       error ->
         error
@@ -77,12 +83,12 @@ defrecord Socket.Host, [:name, :aliases, :type, :length, :list] do
   @spec by_name!(binary | char_list) :: t | no_return
   def by_name!(name) do
     if is_binary(name) do
-      name = String.to_char_list!(name)
+      name = List.from_char_data!(name)
     end
 
     case :inet.gethostbyname(name) do
       { :ok, host } ->
-        set_elem(host, 0, Socket.Host)
+        convert(host)
 
       { :error, code } ->
         raise PosixError, code: code
@@ -95,12 +101,12 @@ defrecord Socket.Host, [:name, :aliases, :type, :length, :list] do
   @spec by_name!(binary | char_list, :inet.address_family) :: t | no_return
   def by_name!(name, family) do
     if is_binary(name) do
-      name = String.to_char_list!(name)
+      name = List.from_char_data!(name)
     end
 
     case :inet.gethostbyname(name, family) do
       { :ok, host } ->
-        set_elem(host, 0, Socket.Host)
+        convert(host)
 
       { :error, code } ->
         raise PosixError, code: code

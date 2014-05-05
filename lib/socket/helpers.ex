@@ -63,10 +63,9 @@ defmodule Socket.Helpers do
     end
   end
 
-
   defmacro definvalid({ name, _, args }) do
     args = if args |> is_list do
-      lc { _, meta, context } inlist args do
+      for { _, meta, context } <- args do
         { :_, meta, context }
       end
     else

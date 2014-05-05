@@ -3,28 +3,20 @@ defmodule Socket.Mixfile do
 
   def project do
     [ app: :socket,
-      version: "0.2.0-dev",
-      elixir: "~> 0.12.4",
-      deps: deps ]
+      version: "0.2.0",
+      elixir: "~> 0.13.0",
+      package: package,
+      description: "Socket handling library for Elixir." ]
   end
 
   # Configuration for the OTP application
   def application do
-    if System.get_env("ELIXIR_NO_NIF") do
-      [ applications: [:crypto, :ssl] ]
-    else
-      [ applications: [:finalizer, :crypto, :ssl],
-        mod: { Socket.Manager, [] } ]
-    end
+    [ applications: [:crypto, :ssl] ]
   end
 
-  # Returns the list of dependencies in the format:
-  # { :foobar, "0.1", git: "https://github.com/elixir-lang/foobar.git" }
-  defp deps do
-    if System.get_env("ELIXIR_NO_NIF") do
-      []
-    else
-      [ { :finalizer, github: "meh/elixir-finalizer" } ]
-    end
+  defp package do
+    [ contributors: ["meh"],
+      licenses: ["WTFPL"],
+      links: [ { "GitHub", "https://github.com/meh/elixir-socket" } ] ]
   end
 end

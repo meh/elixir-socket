@@ -17,8 +17,6 @@ defmodule Socket.TCP do
   * `:as` sets the kind of value returned by recv, either `:binary` or `:list`,
     the default is `:binary`
   * `:mode` can be either `:passive` or `:active`, default is `:passive`
-  * `:automatic` tells it whether to use smart garbage collection or not, when
-    passive the default is `true`, when active the default is `false`
   * `:local` must be a keyword list
     - `:address` the local address to use
     - `:port` the local port to use
@@ -34,17 +32,6 @@ defmodule Socket.TCP do
   * `:packet` see `inet:setopts`
   * `:size` sets the max length of the packet body, see `inet:setopts`
 
-  ## Smart garbage collection
-
-  Normally sockets in Erlang are closed when the controlling process exits,
-  with smart garbage collection the controlling process will be the
-  `Socket.Manager` and it will be closed when there are no more references to
-  it.
-
-  If you plan to change the active/passive mode of a socket, disable automatic
-  garbage collection or the messages will be sent to the manager, and that's
-  not what you want.
-
   ## Examples
 
       server = Socket.TCP.listen!(1337, packet: :line)
@@ -57,9 +44,7 @@ defmodule Socket.TCP do
 
   use Socket.Helpers
 
-  @opaque t :: record
-
-  defrecordp :tcp, __MODULE__, socket: nil, manager: nil, reference: nil
+  @opaque t :: port
 
   @doc """
   Return a proper error string for the given code or nil if it can't be
@@ -74,14 +59,6 @@ defmodule Socket.TCP do
       message ->
         message |> to_string
     end
-  end
-
-  @doc """
-  Wrap an existing socket.
-  """
-  @spec wrap(port) :: t
-  def wrap(port) do
-    tcp(socket: port)
   end
 
   @doc """
@@ -125,24 +102,12 @@ defmodule Socket.TCP do
   @spec connect(String.t | :inet.ip_address, :inet.port_number, Keyword.t) :: { :ok, t } | { :error, Socket.Error.t }
   def connect(address, port, options) do
     if is_binary(address) do
-      address = String.to_char_list!(address)
+      address = List.from_char_data!(address)
     end
 
     options = Keyword.put_new(options, :mode, :passive)
 
-    case :gen_tcp.connect(address, port, arguments(options), options[:timeout] || :infinity) do
-      { :ok, sock } ->
-        reference = if options[:mode] == :passive and options[:automatic] != false do
-          process(sock, Process.whereis(Socket.Manager))
-
-          Finalizer.define({ :close, :tcp, sock }, Process.whereis(Socket.Manager))
-        end
-
-        { :ok, tcp(socket: sock, reference: reference) }
-
-      error ->
-        error
-    end
+    :gen_tcp.connect(address, port, arguments(options), options[:timeout] || :infinity)
   end
 
   @doc """
@@ -196,19 +161,7 @@ defmodule Socket.TCP do
     options = Keyword.put(options, :mode, :passive)
     options = Keyword.put_new(options, :reuseaddr, true)
 
-    case :gen_tcp.listen(port, arguments(options)) do
-      { :ok, sock } ->
-        reference = if options[:mode] == :passive and options[:automatic] != false do
-          process(sock, Process.whereis(Socket.Manager))
-
-          Finalizer.define({ :close, :tcp, sock }, Process.whereis(Socket.Manager))
-        end
-
-        { :ok, tcp(socket: sock, reference: reference) }
-
-      error ->
-        error
-    end
+    :gen_tcp.listen(port, arguments(options))
   end
 
   @doc """
@@ -223,21 +176,9 @@ defmodule Socket.TCP do
   """
   @spec accept(t | port)            :: { :ok, t } | { :error, Error.t }
   @spec accept(t | port, Keyword.t) :: { :ok, t } | { :error, Error.t }
-  def accept(sock, options \\ [])
-
-  def accept(tcp(socket: sock), options) do
-    accept(sock, options)
-  end
-
-  def accept(sock, options) do
+  def accept(sock, options \\ []) do
     case :gen_tcp.accept(sock, options[:timeout] || :infinity) do
       { :ok, sock } ->
-        reference = if options[:mode] == :passive and options[:automatic] != false do
-          process(sock, Process.whereis(Socket.Manager))
-
-          Finalizer.define({ :close, :tcp, sock }, Process.whereis(Socket.Manager))
-        end
-
         case options[:mode] do
           :active ->
             :inet.setopts(sock, active: true)
@@ -252,7 +193,7 @@ defmodule Socket.TCP do
             :ok
         end
 
-        { :ok, tcp(socket: sock, reference: reference) }
+        { :ok, sock }
 
       error ->
         error
@@ -271,11 +212,7 @@ defmodule Socket.TCP do
   @doc """
   Set the process which will receive the messages.
   """
-  @spec process(t | port, pid) :: :ok | { :error, :closed | :not_owner | Error.t }
-  def process(tcp(socket: sock), pid) do
-    process(sock, pid)
-  end
-
+  @spec process(t, pid) :: :ok | { :error, :closed | :not_owner | Error.t }
   def process(sock, pid) do
     :gen_tcp.controlling_process(sock, pid)
   end
@@ -304,14 +241,6 @@ defmodule Socket.TCP do
   Set options of the socket.
   """
   @spec options(t | Socket.SSL.t | port, Keyword.t) :: :ok | { :error, Socket.Error.t }
-  def options(tcp(socket: socket), options) do
-    options(socket, options)
-  end
-
-  def options(socket, options) when socket |> is_record Socket.SSL do
-    Socket.SSL.options(socket, options)
-  end
-
   def options(socket, options) when socket |> is_record :sslsocket do
     Socket.SSL.options(socket, options)
   end
@@ -400,41 +329,4 @@ defmodule Socket.TCP do
 
     args
   end
-end
-
-defimpl Socket.Protocol, for: Socket.TCP do
-  use Socket.Helpers
-
-  defwrap equal?(self, other), to: Port
-
-  defdelegate accept(self), to: @for
-  defdelegate accept(self, options), to: @for
-
-  defdelegate options(self, options), to: @for
-  defwrap packet(self, type), to: Port
-  defdelegate process(self, pid), to: @for
-
-  defwrap active(self), to: Port
-  defwrap active(self, mode), to: Port
-  defwrap passive(self), to: Port
-
-  defwrap local(self), to: Port
-  defwrap remote(self), to: Port
-
-  defwrap close(self), to: Port
-end
-
-defimpl Socket.Stream.Protocol, for: Socket.TCP do
-  use Socket.Helpers
-
-  defwrap send(self, data), to: Port
-  defwrap file(self, path), to: Port
-  defwrap file(self, path, options), to: Port
-
-  defwrap recv(self), to: Port
-  defwrap recv(self, length_or_options), to: Port
-  defwrap recv(self, length, options), to: Port
-
-  defwrap shutdown(self), to: Port
-  defwrap shutdown(self, how), to: Port
 end

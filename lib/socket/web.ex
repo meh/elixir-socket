@@ -13,16 +13,15 @@ defmodule Socket.Web do
   ## Examples
 
       {:ok, sock} = Socket.Web.connect("echo.websocket.org")
-      sock.send({:text, "hello there"}) # you can also send binary using {:binary, "hello there"})
-      {:ok, data} = sock.recv
+      sock |> Socket.Web.send({:text, "hello there"}) # you can also send binary using {:binary, "hello there"})
+      {:ok, data} = sock |> Socket.Web.recv
       IO.inspect data
 
   """
 
   use    Bitwise
   import Kernel, except: [length: 1, send: 2]
-
-  @type t :: record
+  alias __MODULE__, as: W
 
   @type error :: Socket.TCP.error | Socket.SSL.error
 
@@ -34,7 +33,7 @@ defmodule Socket.Web do
                   { :ping, binary } |
                   { :pong, binary }
 
-  @compile { :inline, opcode: 1, close_code: 1, key: 1, error: 1, length: 1, forge: 2 }
+  @compile { :inline, opcode: 1, close_code: 1, key: 1, length: 1, forge: 2 }
 
   Enum.each [ text: 0x1, binary: 0x2, close: 0x8, ping: 0x9, pong: 0xA ], fn { name, code } ->
     defp opcode(unquote(name)), do: unquote(code)
@@ -67,15 +66,15 @@ defmodule Socket.Web do
     end
   end
 
-  defrecordp :web, __MODULE__, socket: nil, version: nil, path: nil, origin: nil, protocols: nil, extensions: nil, key: nil, mask: nil
+  defstruct [:socket, :version, :path, :origin, :protocols, :extensions, :key, :mask]
 
   @spec headers([{ name :: String.t, value :: String.t }], Socket.t) :: [{ name :: String.t, value :: String.t }]
   defp headers(acc, socket) do
-    case socket.recv! do
-      { :http_header, _, name, _, value } when is_atom name ->
+    case socket |> Socket.Stream.recv! do
+      { :http_header, _, name, _, value } when name |> is_atom ->
         [{ atom_to_binary(name) |> String.downcase, value } | acc] |> headers(socket)
 
-      { :http_header, _, name, _, value } when is_binary name ->
+      { :http_header, _, name, _, value } when name |> is_binary ->
         [{ String.downcase(name), value } | acc] |> headers(socket)
 
       :http_eoh ->
@@ -86,11 +85,6 @@ defmodule Socket.Web do
   @spec key(String.t) :: String.t
   defp key(value) do
     :crypto.hash(:sha, value <> "258EAFA5-E914-47DA-95CA-C5AB0DC85B11") |> :base64.encode
-  end
-
-  @spec error(t) :: module
-  defp error(web(socket: socket)) do
-    Module.concat(elem(socket, 0), Error)
   end
 
   @doc """
@@ -114,11 +108,11 @@ defmodule Socket.Web do
     connect(address, port, options)
   end
 
-  def connect(address, options) when is_list(options) do
+  def connect(address, options) when options |> is_list do
     connect(address, if(options[:secure], do: 443, else: 80), options)
   end
 
-  def connect(address, port) when is_integer(port) do
+  def connect(address, port) when port |> is_integer do
     connect(address, port, [])
   end
 
@@ -172,11 +166,11 @@ defmodule Socket.Web do
     connect!(address, port, options)
   end
 
-  def connect!(address, options) when is_list(options) do
+  def connect!(address, options) when options |> is_list do
     connect!(address, if(options[:secure], do: 443, else: 80), options)
   end
 
-  def connect!(address, port) when is_integer(port) do
+  def connect!(address, port) when port |> is_integer do
     connect!(address, port, [])
   end
 
@@ -207,8 +201,8 @@ defmodule Socket.Web do
     key        = :base64.encode(options[:key] || "fork the dongles")
 
     client = mod.connect!(address, port)
-    client.packet!(:raw)
-    client.send!([
+    client |> Socket.packet!(:raw)
+    client |> Socket.Stream.send! [
       "GET #{path} HTTP/1.1", "\r\n",
       "Host: #{address}:#{port}", "\r\n",
       if(origin, do: ["Origin: #{origin}", "\r\n"], else: []),
@@ -218,34 +212,34 @@ defmodule Socket.Web do
       if(protocols, do: ["Sec-WebSocket-Protocol: #{Enum.join protocols, ", "}", "\r\n"], else: []),
       if(extensions, do: ["Sec-WebSocket-Extensions: #{Enum.join extensions, ", "}", "\r\n"], else: []),
       "Sec-WebSocket-Version: 13", "\r\n",
-      "\r\n"])
+      "\r\n"]
 
-    client.packet(:http_bin)
-    { :http_response, _, 101, _ } = client.recv!
-    headers                       = headers([], client)
+    client |> Socket.packet(:http_bin)
+    { :http_response, _, 101, _ } = client |> Socket.Stream.recv!
+    headers                       = headers([], client) |> Enum.into(%{})
 
     if String.downcase(headers["upgrade"]) != "websocket" or
        String.downcase(headers["connection"]) != "upgrade" do
-      client.close
+      client |> Socket.close
 
       raise RuntimeError, message: "malformed upgrade response"
     end
 
     if headers["sec-websocket-version"] && headers["sec-websocket-version"] != "13" do
-      client.close
+      client |> Socket.close
 
       raise RuntimeError, message: "unsupported version"
     end
 
     if !headers["sec-websocket-accept"] or headers["sec-websocket-accept"] != key(key) do
-      client.close
+      client |> Socket.close
 
       raise RuntimeError, message: "wrong key response"
     end
 
-    client.packet!(:raw)
+    client |> Socket.packet!(:raw)
 
-    web(socket: client, version: 13, path: path, origin: origin, key: key, mask: true)
+    %W{socket: client, version: 13, path: path, origin: origin, key: key, mask: true}
   end
 
   @doc """
@@ -260,7 +254,7 @@ defmodule Socket.Web do
   Listens on the given port or with the given options.
   """
   @spec listen(:inet.port_number | Keyword.t) :: { :ok, t } | { :error, error }
-  def listen(port) when is_integer(port) do
+  def listen(port) when port |> is_integer do
     listen(port, [])
   end
 
@@ -292,7 +286,7 @@ defmodule Socket.Web do
 
     case mod.listen(port, options) do
       { :ok, socket } ->
-        { :ok, web(socket: socket) }
+        { :ok, %W{socket: socket} }
 
       error ->
         error
@@ -312,7 +306,7 @@ defmodule Socket.Web do
   occurs.
   """
   @spec listen!(:inet.port_number | Keyword.t) :: t | no_return
-  def listen!(port) when is_integer(port) do
+  def listen!(port) when port |> is_integer do
     listen!(port, [])
   end
 
@@ -342,7 +336,7 @@ defmodule Socket.Web do
       Socket.TCP
     end
 
-    web(socket: mod.listen!(port, options))
+    %W{socket: mod.listen!(port, options)}
   end
 
   @doc """
@@ -353,27 +347,10 @@ defmodule Socket.Web do
   handshake, this separation is done because then you can verify the client can
   connect based on Origin header, path and other things.
   """
-  @spec accept(t) :: { :ok, t } | { :error, error }
-  def accept(web(key: nil) = self) do
-    accept([], self)
-  end
-
-  def accept(web() = self) do
-    try do
-      { :ok, accept!(self) }
-    rescue
-      e in [Socket.TCP.Error, Socket.SSL.Error] ->
-        { :error, e.code }
-    end
-  end
-
-  @doc """
-  Accept a client connection from the listening socket with the passed options.
-  """
   @spec accept(Keyword.t, t) :: { :ok, t } | { :error, error }
-  def accept(options, web(key: nil) = self) do
+  def accept(%W{key: nil} = self, options \\ []) do
     try do
-      { :ok, accept!(options, self) }
+      { :ok, accept!(self, options) }
     rescue
       MatchError ->
         { :error, "malformed handshake" }
@@ -381,7 +358,7 @@ defmodule Socket.Web do
       e in [RuntimeError] ->
         { :error, e.message }
 
-      e in [Socket.TCP.Error, Socket.SSL.Error] ->
+      e in [Socket.Error] ->
         { :error, e.code }
     end
   end
@@ -396,17 +373,8 @@ defmodule Socket.Web do
 
   In case of error, it raises.
   """
-  @spec accept!(t) :: t | no_return
-  def accept!(self) do
-    accept!([], self)
-  end
-
-  @doc """
-  Accept a client connection from the listening socket with the passed options,
-  raising if an error occurs.
-  """
   @spec accept!(Keyword.t, t) :: t | no_return
-  def accept!(options, web(socket: socket, key: nil)) do
+  def accept!(%W{socket: socket, key: nil}, options \\ []) do
     client = socket.accept!(options)
     client.packet!(:http_bin)
 
@@ -439,21 +407,21 @@ defmodule Socket.Web do
 
     client.packet!(:raw)
 
-    web(socket: client,
-        origin: headers["origin"],
-        path: path,
-        version: 13,
-        key: headers["sec-websocket-key"],
-        protocols: protocols,
-        extensions: extensions)
+    %W{socket: client,
+       origin: headers["origin"],
+       path: path,
+       version: 13,
+       key: headers["sec-websocket-key"],
+       protocols: protocols,
+       extensions: extensions}
   end
 
-  def accept!(options, web(socket: socket, key: key)) do
+  def accept!(%W{socket: socket, key: key}, options) do
     extensions = options[:extension]
     protocol   = options[:protocol]
 
-    socket.packet(:raw)
-    socket.send!([
+    socket |> Socket.packet!(:raw)
+    socket |> Socket.Stream.send! [
       "HTTP/1.1 101 Switching Protocols", "\r\n",
       "Upgrade: websocket", "\r\n",
       "Connection: Upgrade", "\r\n",
@@ -461,39 +429,39 @@ defmodule Socket.Web do
       "Sec-WebSocket-Version: 13", "\r\n",
       if(extensions, do: ["Sec-WebSocket-Extensions: ", Enum.join(extensions, ", "), "\r\n"], else: []),
       if(protocol, do: ["Sec-WebSocket-Protocol: ", protocol, "\r\n"], else: []),
-      "\r\n"])
+      "\r\n" ]
   end
 
   @doc """
   Return the local address and port.
   """
   @spec local(t) :: { :ok, { :inet.ip_address, :inet.port_number } } | { :error, error }
-  def local(web(socket: sock)) do
-    sock.local
+  def local(%W{socket: socket}) do
+    socket |> Socket.local
   end
 
   @doc """
   Return the local address and port, raising if an error occurs.
   """
   @spec local!(t) :: { :inet.ip_address, :inet.port_number } | no_return
-  def local!(web(socket: socket)) do
-    socket.local!
+  def local!(%W{socket: socket}) do
+    socket |> Socket.local!
   end
 
   @doc """
   Return the remote address and port.
   """
   @spec remote(t) :: { :ok, { :inet.ip_address, :inet.port_number } } | { :error, error }
-  def remote(web(socket: socket)) do
-    socket.remote
+  def remote(%W{socket: socket}) do
+    socket |> Socket.remote
   end
 
   @doc """
   Return the remote address and port, raising if an error occurs.
   """
   @spec remote!(t) :: { :inet.ip_address, :inet.port_number } | no_return
-  def remote!(web(socket: socket)) do
-    socket.remote!
+  def remote!(%W{socket: socket}) do
+    socket |> Socket.remote!
   end
 
   @spec mask(binary) :: { integer, binary }
@@ -544,10 +512,10 @@ defmodule Socket.Web do
   end
 
   @spec recv(boolean, non_neg_integer, t) :: { :ok, binary } | { :error, error }
-  defp recv(mask, length, web(socket: socket, version: 13)) do
+  defp recv(%W{socket: socket, version: 13}, mask, length) do
     length = cond do
       length == 127 ->
-        case socket.recv(8) do
+        case socket |> Socket.Stream.recv(8) do
           { :ok, << length :: 64 >> } ->
             length
 
@@ -556,7 +524,7 @@ defmodule Socket.Web do
         end
 
       length == 126 ->
-        case socket.recv(2) do
+        case socket |> Socket.Stream.recv(2) do
           { :ok, << length :: 16 >> } ->
             length
 
@@ -574,9 +542,9 @@ defmodule Socket.Web do
 
       length ->
         if mask do
-          case socket.recv(4) do
+          case socket |> Socket.Stream.recv(4) do
             { :ok, << key :: 32 >> } ->
-              case socket.recv(length) do
+              case socket |> Socket.Stream.recv(length) do
                 { :ok, data } ->
                   { :ok, unmask(key, data) }
 
@@ -588,7 +556,7 @@ defmodule Socket.Web do
               error
           end
         else
-          case socket.recv(length) do
+          case socket |> Socket.Stream.recv(length) do
             { :ok, data } ->
               { :ok, data }
 
@@ -601,7 +569,7 @@ defmodule Socket.Web do
 
   defmacrop on_success(result) do
     quote do
-      case recv(var!(mask) == 1, var!(length), var!(self)) do
+      case recv(var!(self), var!(mask) == 1, var!(length)) do
         { :ok, var!(data) } ->
           { :ok, unquote(result) }
 
@@ -615,8 +583,8 @@ defmodule Socket.Web do
   Receive a packet from the websocket.
   """
   @spec recv(t) :: { :ok, packet } | { :error, error }
-  def recv(web(socket: socket, version: 13) = self) do
-    case socket.recv(2) do
+  def recv(%W{socket: socket, version: 13} = self) do
+    case socket |> Socket.Stream.recv(2) do
       # a non fragmented message packet
       { :ok, << 1      :: 1,
                 0      :: 3,
@@ -698,7 +666,7 @@ defmodule Socket.Web do
         raise RuntimeError, message: "protocol error"
 
       { :error, code } ->
-        raise error(self), code: code
+        raise Socket.Error, code: code
     end
   end
 
@@ -739,46 +707,50 @@ defmodule Socket.Web do
   @spec send(packet, Keyword.t, t) :: :ok | { :error, error }
   def send(packet, options \\ [], self)
 
-  def send({ opcode, data }, options, web(socket: socket, version: 13, mask: mask)) when data?(opcode) and opcode != :close do
-    socket.send(<< 1              :: 1,
-                   0              :: 3,
-                   opcode(opcode) :: 4,
-                   forge(options[:mask] || mask, data) :: binary >>)
+  def send(%W{socket: socket, version: 13, mask: mask}, { opcode, data }, options) when data?(opcode) and opcode != :close do
+    socket |> Socket.Stream.send(
+      << 1              :: 1,
+         0              :: 3,
+         opcode(opcode) :: 4,
+         forge(options[:mask] || mask, data) :: binary >>)
   end
 
-  def send({ :fragmented, :end, data }, options, web(socket: socket, version: 13, mask: mask)) do
-    socket.send(<< 1 :: 1,
-                   0 :: 3,
-                   0 :: 4,
-                   forge(options[:mask] || mask, data) :: binary >>)
+  def send(%W{socket: socket, version: 13, mask: mask}, { :fragmented, :end, data }, options) do
+    socket |> Socket.Stream.send(
+      << 1 :: 1,
+         0 :: 3,
+         0 :: 4,
+         forge(options[:mask] || mask, data) :: binary >>)
   end
 
-  def send({ :fragmented, :continuation, data }, options, web(socket: socket, version: 13, mask: mask)) do
-    socket.send(<< 0 :: 1,
-                   0 :: 3,
-                   0 :: 4,
-                   forge(options[:mask] || mask, data) :: binary >>)
+  def send(%W{socket: socket, version: 13, mask: mask}, { :fragmented, :continuation, data }, options) do
+    socket |> Socket.Stream.send(
+      << 0 :: 1,
+         0 :: 3,
+         0 :: 4,
+         forge(options[:mask] || mask, data) :: binary >>)
   end
 
-  def send({ :fragmented, opcode, data }, options, web(socket: socket, version: 13, mask: mask)) do
-    socket.send(<< 0              :: 1,
-                   0              :: 3,
-                   opcode(opcode) :: 4,
-                   forge(options[:mask] || mask, data) :: binary >>)
+  def send(%W{socket: socket, version: 13, mask: mask}, { :fragmented, opcode, data }, options) do
+    socket |> Socket.Stream.send(
+      << 0              :: 1,
+         0              :: 3,
+         opcode(opcode) :: 4,
+         forge(options[:mask] || mask, data) :: binary >>)
   end
 
   @doc """
   Send a packet to the websocket, raising if an error occurs.
   """
-  @spec send!(packet, t)            :: :ok | no_return
-  @spec send!(packet, Keyword.t, t) :: :ok | no_return
-  def send!(packet, options \\ [], self) do
-    case send(packet, options, self) do
+  @spec send!(t, packet)            :: :ok | no_return
+  @spec send!(t, packet, Keyword.t) :: :ok | no_return
+  def send!(self, packet, options \\ []) do
+    case send(self, packet, options) do
       :ok ->
         :ok
 
       { :error, code } ->
-        raise error(self), code: code
+        raise Socket.Error, code: code
     end
   end
 
@@ -786,9 +758,9 @@ defmodule Socket.Web do
   Send a ping request with the optional cookie.
   """
   @spec ping(t)         :: :ok | { :error, error }
-  @spec ping(binary, t) :: :ok | { :error, error }
-  def ping(cookie \\ :crypt.rand_bytes(32), self) do
-    case send({ :ping, cookie }, self) do
+  @spec ping(t, binary) :: :ok | { :error, error }
+  def ping(self, cookie \\ :crypt.rand_bytes(32)) do
+    case send(self, { :ping, cookie }) do
       :ok ->
         cookie
 
@@ -802,8 +774,8 @@ defmodule Socket.Web do
   """
   @spec ping!(t)         :: :ok | no_return
   @spec ping!(binary, t) :: :ok | no_return
-  def ping!(cookie \\ :crypt.rand_bytes(32), self) do
-    send!({ :ping, cookie }, self)
+  def ping!(self, cookie \\ :crypt.rand_bytes(32)) do
+    send!(self, { :ping, cookie })
 
     cookie
   end
@@ -812,8 +784,8 @@ defmodule Socket.Web do
   Send a pong with the given (and received) ping cookie.
   """
   @spec pong(binary, t) :: :ok | { :error, error }
-  def pong(cookie, self) do
-    send({ :pong, cookie }, self)
+  def pong(self, cookie) do
+    send(self, { :pong, cookie })
   end
 
   @doc """
@@ -821,20 +793,21 @@ defmodule Socket.Web do
   occurs.
   """
   @spec pong!(binary, t) :: :ok | no_return
-  def pong!(cookie, self) do
-    send!({ :pong, cookie }, self)
+  def pong!(self, cookie) do
+    send!(self, { :pong, cookie })
   end
 
   @doc """
   Close the socket when a close request has been received.
   """
   @spec close(t) :: :ok | { :error, error }
-  def close(web(socket: socket, version: 13)) do
-    socket.send(<< 1              :: 1,
-                   0              :: 3,
-                   opcode(:close) :: 4,
+  def close(%W{socket: socket, version: 13}) do
+    socket |> Socket.Stream.send(
+      << 1              :: 1,
+         0              :: 3,
+         opcode(:close) :: 4,
 
-                   forge(nil, <<>>) :: binary >>)
+         forge(nil, <<>>) :: binary >>)
   end
 
   @doc """
@@ -842,36 +815,37 @@ defmodule Socket.Web do
   blocks until the close response has been received, and then closes the
   underlying socket.
   """
-  @spec close(atom, Keyword.t, t) :: :ok | { :error, error }
-  def close(reason, options \\ [], web(socket: socket, version: 13, mask: mask) = self) do
-    if is_tuple(reason) do
+  @spec close(t, atom, Keyword.t) :: :ok | { :error, error }
+  def close(%W{socket: socket, version: 13, mask: mask} = self, reason, options \\ []) do
+    if reason |> is_tuple do
       { reason, data } = reason
     else
       data = <<>>
     end
 
-    socket.send(<< 1              :: 1,
-                   0              :: 3,
-                   opcode(:close) :: 4,
+    socket |> Socket.Stream.send(
+      << 1              :: 1,
+         0              :: 3,
+         opcode(:close) :: 4,
 
-                   forge(options[:mask] || mask,
-                     << close_code(reason) :: 16, data :: binary >>) :: binary >>)
+         forge(options[:mask] || mask,
+           << close_code(reason) :: 16, data :: binary >>) :: binary >>)
 
     unless options[:wait] == false do
-      do_close(self.recv, self)
+      do_close(self, recv(self))
     end
   end
 
-  defp do_close({ :ok, :close }, self) do
-    self.abort
+  defp do_close(self, { :ok, :close }) do
+    abort(self)
   end
 
-  defp do_close({ :ok, { :close, _, _ } }, self) do
-    self.abort
+  defp do_close(self, { :ok, { :close, _, _ } }) do
+    abort(self)
   end
 
-  defp do_close(_, self) do
-    do_close(self.recv, self)
+  defp do_close(self, _) do
+    do_close(self, recv(self))
   end
 
   @doc """
@@ -879,7 +853,7 @@ defmodule Socket.Web do
   procedure should be preferred.
   """
   @spec abort(t) :: :ok | { :error, error }
-  def abort(web(socket: socket)) do
-    socket.close
+  def abort(%W{socket: socket}) do
+    close(socket)
   end
 end

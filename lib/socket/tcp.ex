@@ -100,14 +100,10 @@ defmodule Socket.TCP do
   Create a TCP socket connecting to the given host and port.
   """
   @spec connect(String.t | :inet.ip_address, :inet.port_number, Keyword.t) :: { :ok, t } | { :error, Socket.Error.t }
-  def connect(address, port, options) do
-    if is_binary(address) do
-      address = List.from_char_data!(address)
-    end
-
+  def connect(address, port, options) when address |> is_binary do
     options = Keyword.put_new(options, :mode, :passive)
 
-    :gen_tcp.connect(address, port, arguments(options), options[:timeout] || :infinity)
+    :gen_tcp.connect(List.from_char_data!(address), port, arguments(options), options[:timeout] || :infinity)
   end
 
   @doc """
@@ -241,7 +237,7 @@ defmodule Socket.TCP do
   Set options of the socket.
   """
   @spec options(t | Socket.SSL.t | port, Keyword.t) :: :ok | { :error, Socket.Error.t }
-  def options(socket, options) when socket |> is_record :sslsocket do
+  def options(socket, options) when socket |> is_record(:sslsocket) do
     Socket.SSL.options(socket, options)
   end
 

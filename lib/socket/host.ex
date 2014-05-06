@@ -44,13 +44,9 @@ defmodule Socket.Host do
   @doc """
   Get the hostent by name.
   """
-  @spec by_name(binary | char_list) :: { :ok, t } | { :error, :inet.posix }
-  def by_name(name) do
-    if is_binary(name) do
-      name = List.from_char_data!(name)
-    end
-
-    case :inet.gethostbyname(name) do
+  @spec by_name(binary) :: { :ok, t } | { :error, :inet.posix }
+  def by_name(name) when name |> is_binary do
+    case :inet.gethostbyname(List.from_char_data!(name)) do
       { :ok, host } ->
         { :ok, convert(host) }
 
@@ -62,13 +58,9 @@ defmodule Socket.Host do
   @doc """
   Get the hostent by name and family.
   """
-  @spec by_name(binary | char_list, :inet.address_family) :: { :ok, t } | { :error, :inet.posix }
-  def by_name(name, family) do
-    if is_binary(name) do
-      name = List.from_char_data!(name)
-    end
-
-    case :inet.gethostbyname(name, family) do
+  @spec by_name(binary, :inet.address_family) :: { :ok, t } | { :error, :inet.posix }
+  def by_name(name, family) when name |> is_binary do
+    case :inet.gethostbyname(List.from_char_data!(name), family) do
       { :ok, host } ->
         { :ok, convert(host) }
 
@@ -80,13 +72,9 @@ defmodule Socket.Host do
   @doc """
   Get the hostent by name, raising if an error occurs.
   """
-  @spec by_name!(binary | char_list) :: t | no_return
-  def by_name!(name) do
-    if is_binary(name) do
-      name = List.from_char_data!(name)
-    end
-
-    case :inet.gethostbyname(name) do
+  @spec by_name!(binary) :: t | no_return
+  def by_name!(name) when name |> is_binary do
+    case :inet.gethostbyname(List.from_char_data!(name)) do
       { :ok, host } ->
         convert(host)
 
@@ -99,12 +87,8 @@ defmodule Socket.Host do
   Get the hostent by name and family, raising if an error occurs.
   """
   @spec by_name!(binary | char_list, :inet.address_family) :: t | no_return
-  def by_name!(name, family) do
-    if is_binary(name) do
-      name = List.from_char_data!(name)
-    end
-
-    case :inet.gethostbyname(name, family) do
+  def by_name!(name, family) when name |> is_binary do
+    case :inet.gethostbyname(List.from_char_data!(name), family) do
       { :ok, host } ->
         convert(host)
 

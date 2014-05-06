@@ -45,7 +45,7 @@ defmodule Socket do
 
   """
   @spec connect(String.t | URI.t) :: { :ok, Socket.t } | { :error, any }
-  def connect(uri) when is_list(uri) or is_binary(uri) do
+  def connect(uri) when uri |> is_list or uri |> is_binary do
     connect(URI.parse(uri))
   end
 
@@ -70,7 +70,7 @@ defmodule Socket do
   occurs, see `connect`.
   """
   @spec connect!(String.t | URI.t) :: Socket.t | no_return
-  def connect!(uri) when is_list(uri) or is_binary(uri) do
+  def connect!(uri) when uri |> is_list or uri |> is_binary do
     connect!(URI.parse(uri))
   end
 
@@ -112,7 +112,7 @@ defmodule Socket do
 
   """
   @spec listen(String.t | URI.t) :: { :ok, Socket.t } | { :error, any }
-  def listen(uri) when is_list(uri) or is_binary(uri) do
+  def listen(uri) when uri |> is_list or uri |> is_binary do
     listen(URI.parse(uri))
   end
 
@@ -137,7 +137,7 @@ defmodule Socket do
   see `listen`.
   """
   @spec listen!(String.t | URI.t) :: Socket.t | no_return
-  def listen!(uri) when is_list(uri) or is_binary(uri) do
+  def listen!(uri) when uri |> is_list or uri |> is_binary do
     listen!(URI.parse(uri))
   end
 
@@ -197,7 +197,7 @@ defmodule Socket do
         { timeout, :close } ->
           args = [{ :send_timeout, timeout }, { :send_timeout_close, true } | args]
 
-        timeout when is_integer(timeout) ->
+        timeout when timeout |> is_integer ->
           args = [{ :send_timeout, timeout } | args]
       end
 
@@ -397,55 +397,55 @@ defimpl Socket.Protocol, for: Port do
 end
 
 defimpl Socket.Protocol, for: Tuple do
-  def equal?(self, other) when self |> is_record :sslsocket and other |> is_record :sslsocket do
+  def equal?(self, other) when self |> is_record(:sslsocket) and other |> is_record(:sslsocket) do
     self == other
   end
 
-  def equal?(self, other) when self |> is_record :sslsocket and other |> is_record do
-    self == elem(other, 1)
+  def equal?(self, other) when self |> is_record(:sslsocket) do
+    self |> elem(1) == other
   end
 
   def equal?(_, _) do
     false
   end
 
-  def accept(self, options \\ []) when self |> is_record :sslsocket do
+  def accept(self, options \\ []) when self |> is_record(:sslsocket) do
     Socket.SSL.accept(self, options)
   end
 
-  def options(self, opts) when self |> is_record :sslsocket do
+  def options(self, opts) when self |> is_record(:sslsocket) do
     Socket.SSL.options(self, opts)
   end
 
-  def packet(self, type) when self |> is_record :sslsocket do
+  def packet(self, type) when self |> is_record(:sslsocket) do
     :ssl.setopts(self, packet: type)
   end
 
-  def process(self, pid) when self |> is_record :sslsocket do
+  def process(self, pid) when self |> is_record(:sslsocket) do
     :ssl.controlling_process(self, pid)
   end
 
-  def active(self) when self |> is_record :sslsocket do
+  def active(self) when self |> is_record(:sslsocket) do
     :ssl.setopts(self, active: true)
   end
 
-  def active(self, :once) when self |> is_record :sslsocket do
+  def active(self, :once) when self |> is_record(:sslsocket) do
     :ssl.setopts(self, active: :once)
   end
 
-  def passive(self) when self |> is_record :sslsocket do
+  def passive(self) when self |> is_record(:sslsocket) do
     :ssl.setopts(self, active: false)
   end
 
-  def local(self) when self |> is_record :sslsocket do
+  def local(self) when self |> is_record(:sslsocket) do
     :ssl.sockname(self)
   end
 
-  def remote(self) when self |> is_record :sslsocket do
+  def remote(self) when self |> is_record(:sslsocket) do
     :ssl.peername(self)
   end
 
-  def close(self) when self |> is_record :sslsocket do
+  def close(self) when self |> is_record(:sslsocket) do
     :ssl.close(self)
   end
 end

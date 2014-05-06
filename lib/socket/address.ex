@@ -13,11 +13,11 @@ defmodule Socket.Address do
   Parse a string to an ip address tuple.
   """
   @spec parse(t) :: :inet.ip_address
-  def parse(text) when is_binary(text) do
+  def parse(text) when text |> is_binary do
     parse(List.from_char_data!(text))
   end
 
-  def parse(text) when is_list(text) do
+  def parse(text) when text |> is_list do
     case :inet.parse_address(text) do
       { :ok, ip } ->
         ip

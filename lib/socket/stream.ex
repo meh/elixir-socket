@@ -156,11 +156,11 @@ defimpl Socket.Stream.Protocol, for: Port do
     recv(self, 0, [])
   end
 
-  def recv(self, length) when is_integer(length) do
+  def recv(self, length) when length |> is_integer do
     recv(self, length, [])
   end
 
-  def recv(self, options) when is_list(options) do
+  def recv(self, options) when options |> is_list do
     recv(self, 0, options)
   end
 
@@ -187,11 +187,11 @@ defimpl Socket.Stream.Protocol, for: Port do
 end
 
 defimpl Socket.Stream.Protocol, for: Tuple do
-  def send(self, data) when self |> is_record :sslsocket do
+  def send(self, data) when self |> is_record(:sslsocket) do
     :ssl.send(self, data)
   end
 
-  def file(self, path, options \\ []) when self |> is_record :sslsocket do
+  def file(self, path, options \\ []) when self |> is_record(:sslsocket) do
     cond do
       options[:size] && options[:chunk_size] ->
         file(self, path, options[:offset] || 0, options[:size], options[:chunk_size])
@@ -221,19 +221,19 @@ defimpl Socket.Stream.Protocol, for: Tuple do
     end
   end
 
-  def recv(self) when self |> is_record :sslsocket do
+  def recv(self) when self |> is_record(:sslsocket) do
     recv(self, 0, [])
   end
 
-  def recv(self, length) when self |> is_record :sslsocket and is_integer(length) do
+  def recv(self, length) when self |> is_record(:sslsocket) and length |> is_integer do
     recv(self, length, [])
   end
 
-  def recv(self, options) when self |> is_record :sslsocket and is_list(options) do
+  def recv(self, options) when self |> is_record(:sslsocket) and options |> is_list do
     recv(self, 0, options)
   end
 
-  def recv(self, length, options) when self |> is_record :sslsocket do
+  def recv(self, length, options) when self |> is_record(:sslsocket) do
     case :ssl.recv(self, length, options[:timeout] || :infinity) do
       { :ok, _ } = ok ->
         ok

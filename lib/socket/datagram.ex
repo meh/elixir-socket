@@ -61,11 +61,11 @@ defimpl Socket.Datagram.Protocol, for: Port do
     recv(self, 0, [])
   end
 
-  def recv(self, length) when is_integer(length) do
+  def recv(self, length) when length |> is_integer do
     recv(self, length, [])
   end
 
-  def recv(self, options) when is_list(options) do
+  def recv(self, options) when options |> is_list do
     recv(self, 0, options)
   end
 

@@ -47,18 +47,18 @@ defmodule Socket.Helpers do
     end
   end
 
-  defmacro defwrap({ name, _, [self | args] }) do
-    quote bind_quoted: [name: Macro.escape(name), self: Macro.escape(self), args: Macro.escape(args)] do
-      def unquote(name)(unquote(self), unquote_splicing(args)) do
-        unquote(self) |> elem(1) |> @protocol.unquote(name)(unquote_splicing(args))
+  defmacro defwrap({ name, _, [self | args] }, options \\ []) do
+    if instance = options[:to] do
+      quote bind_quoted: [name: Macro.escape(name), self: Macro.escape(self), args: Macro.escape(args), instance: Macro.escape(instance), field: options[:field] || :socket] do
+        def unquote(name)(unquote(self), unquote_splicing(args)) do
+          unquote(self).unquote(field) |> @protocol.unquote(instance).unquote(name)(unquote_splicing(args))
+        end
       end
-    end
-  end
-
-  defmacro defwrap({ name, _, [self | args] }, to: instance) do
-    quote bind_quoted: [name: Macro.escape(name), self: Macro.escape(self), args: Macro.escape(args), instance: Macro.escape(instance)] do
-      def unquote(name)(unquote(self), unquote_splicing(args)) do
-        unquote(self) |> elem(1) |> @protocol.unquote(instance).unquote(name)(unquote_splicing(args))
+    else
+      quote bind_quoted: [name: Macro.escape(name), self: Macro.escape(self), args: Macro.escape(args), field: options[:field] || :socket] do
+        def unquote(name)(unquote(self), unquote_splicing(args)) do
+          unquote(self).unquote(field) |> @protocol.unquote(name)(unquote_splicing(args))
+        end
       end
     end
   end

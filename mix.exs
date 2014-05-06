@@ -6,7 +6,7 @@ defmodule Socket.Mixfile do
       version: "0.2.0",
       elixir: "~> 0.13.0",
       package: package,
-      description: "Socket handling library for Elixir." ]
+      description: "Socket handling library for Elixir" ]
   end
 
   # Configuration for the OTP application

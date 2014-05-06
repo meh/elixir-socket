@@ -19,7 +19,7 @@ defmodule HTTP do
 
     [_, code, text] = Regex.run %r"HTTP/1.1 (.*?) (.*?)\s*$", sock |> Socket.Stream.recv!
 
-    headers = headers([], sock)
+    headers = headers([], sock) |> Enum.into(%{})
 
     sock |> Socket.packet! :raw
     body = sock |> Socket.Stream.recv!(binary_to_integer(headers["Content-Length"]))
@@ -47,8 +47,8 @@ Connecting to a Websocket
 defmodule Ws do
   def simple_ws_conn() do
     {:ok, sock} = Socket.Web.connect("echo.websocket.org")
-    sock.send({:text, "hello there"}) # you can also send binary using {:binary, "hello there"})
-    {:ok, data} = sock.recv
+    sock |> Socket.Web.send({:text, "hello there"}) # you can also send binary using {:binary, "hello there"})
+    {:ok, data} = sock |> Socket.Web.recv
     IO.inspect data
   end
 end

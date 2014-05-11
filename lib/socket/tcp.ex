@@ -43,6 +43,7 @@ defmodule Socket.TCP do
   """
 
   use Socket.Helpers
+  require Record
 
   @opaque t :: port
 
@@ -237,7 +238,7 @@ defmodule Socket.TCP do
   Set options of the socket.
   """
   @spec options(t | Socket.SSL.t | port, Keyword.t) :: :ok | { :error, Socket.Error.t }
-  def options(socket, options) when socket |> is_record(:sslsocket) do
+  def options(socket, options) when socket |> Record.record?(:sslsocket) do
     Socket.SSL.options(socket, options)
   end
 

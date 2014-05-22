@@ -12,7 +12,7 @@ defmodule Socket.TCP do
 
   ## Options
 
-  When creating a socket you can pass a serie of options to use for it.
+  When creating a socket you can pass a series of options to use for it.
 
   * `:as` sets the kind of value returned by recv, either `:binary` or `:list`,
     the default is `:binary`

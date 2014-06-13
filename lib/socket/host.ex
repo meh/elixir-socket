@@ -46,7 +46,7 @@ defmodule Socket.Host do
   """
   @spec by_name(binary) :: { :ok, t } | { :error, :inet.posix }
   def by_name(name) when name |> is_binary do
-    case :inet.gethostbyname(List.from_char_data!(name)) do
+    case :inet.gethostbyname(String.to_char_list(name)) do
       { :ok, host } ->
         { :ok, convert(host) }
 
@@ -60,7 +60,7 @@ defmodule Socket.Host do
   """
   @spec by_name(binary, :inet.address_family) :: { :ok, t } | { :error, :inet.posix }
   def by_name(name, family) when name |> is_binary do
-    case :inet.gethostbyname(List.from_char_data!(name), family) do
+    case :inet.gethostbyname(String.to_char_list(name), family) do
       { :ok, host } ->
         { :ok, convert(host) }
 
@@ -74,7 +74,7 @@ defmodule Socket.Host do
   """
   @spec by_name!(binary) :: t | no_return
   def by_name!(name) when name |> is_binary do
-    case :inet.gethostbyname(List.from_char_data!(name)) do
+    case :inet.gethostbyname(String.to_char_list(name)) do
       { :ok, host } ->
         convert(host)
 
@@ -88,7 +88,7 @@ defmodule Socket.Host do
   """
   @spec by_name!(binary | char_list, :inet.address_family) :: t | no_return
   def by_name!(name, family) when name |> is_binary do
-    case :inet.gethostbyname(List.from_char_data!(name), family) do
+    case :inet.gethostbyname(String.to_char_list(name), family) do
       { :ok, host } ->
         convert(host)
 

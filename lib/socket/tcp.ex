@@ -104,7 +104,7 @@ defmodule Socket.TCP do
   def connect(address, port, options) when address |> is_binary do
     options = Keyword.put_new(options, :mode, :passive)
 
-    :gen_tcp.connect(List.from_char_data!(address), port, arguments(options), options[:timeout] || :infinity)
+    :gen_tcp.connect(String.to_char_list(address), port, arguments(options), options[:timeout] || :infinity)
   end
 
   @doc """

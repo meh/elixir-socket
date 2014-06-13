@@ -9,20 +9,22 @@
 defmodule Socket do
   @type t :: Socket.Protocol.t
 
-  defexception Error, reason: nil do
-    @type t :: Error.t
+  defmodule Error do
+    defexception message: nil
 
-    def message(Error[reason: reason]) do
-      cond do
-        message = Socket.TCP.error(reason) ->
-          message
+    def exception(reason: reason) do
+      message = cond do
+        msg = Socket.TCP.error(reason) ->
+          msg
 
-        message = Socket.SSL.error(reason) ->
-          message
+        msg = Socket.SSL.error(reason) ->
+          msg
 
         true ->
           reason |> to_string
       end
+
+      %Error{message: message}
     end
   end
 

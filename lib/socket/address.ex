@@ -14,7 +14,7 @@ defmodule Socket.Address do
   """
   @spec parse(t) :: :inet.ip_address
   def parse(text) when text |> is_binary do
-    parse(List.from_char_data!(text))
+    parse(String.to_char_list(text))
   end
 
   def parse(text) when text |> is_list do

@@ -51,7 +51,7 @@ end
 defimpl Socket.Datagram.Protocol, for: Port do
   def send(self, data, { address, port }) do
     if address |> is_binary do
-      address = address |> List.from_char_data!
+      address = address |> String.to_char_list
     end
 
     :gen_udp.send(self, address, port, data)

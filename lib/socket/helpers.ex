@@ -11,7 +11,7 @@ defmodule Socket.Helpers do
     end
 
     quote bind_quoted: [name: Macro.escape(name), args: Macro.escape(args)] do
-      def unquote(to_string(name) <> "!" |> binary_to_atom)(unquote_splicing(args)) do
+      def unquote(to_string(name) <> "!" |> String.to_atom)(unquote_splicing(args)) do
         case unquote(name)(unquote_splicing(args)) do
           :ok ->
             :ok
@@ -32,7 +32,7 @@ defmodule Socket.Helpers do
     end
 
     quote bind_quoted: [mod: Macro.escape(mod), name: Macro.escape(name), args: Macro.escape(args)] do
-      def unquote(to_string(name) <> "!" |> binary_to_atom)(unquote_splicing(args)) do
+      def unquote(to_string(name) <> "!" |> String.to_atom)(unquote_splicing(args)) do
         case unquote(mod).unquote(name)(unquote_splicing(args)) do
           :ok ->
             :ok

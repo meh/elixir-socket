@@ -72,7 +72,7 @@ defmodule Socket.Web do
   defp headers(acc, socket) do
     case socket |> Socket.Stream.recv! do
       { :http_header, _, name, _, value } when name |> is_atom ->
-        [{ atom_to_binary(name) |> String.downcase, value } | acc] |> headers(socket)
+        [{ Atom.to_string(name) |> String.downcase, value } | acc] |> headers(socket)
 
       { :http_header, _, name, _, value } when name |> is_binary ->
         [{ String.downcase(name), value } | acc] |> headers(socket)

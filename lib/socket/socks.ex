@@ -10,11 +10,11 @@ defmodule Socket.SOCKS do
   use Socket.Helpers
 
   def connect(to, through, options \\ []) do
-    [address, port | auth] = through |> tuple_to_list
+    [address, port | auth] = through |> Tuple.to_list
 
     case pre(address, port, options) do
       { :ok, socket } ->
-        case handshake(socket, options[:version] || 5, auth |> list_to_tuple, to) do
+        case handshake(socket, options[:version] || 5, auth |> List.to_tuple, to) do
           :ok ->
             case post(socket, options) do
               :ok ->

@@ -48,11 +48,11 @@ defmodule Socket.Address do
   end
 
   def to_string(address) when address |> is_list do
-    address |> iodata_to_binary
+    address |> IO.iodata_to_binary
   end
 
   def to_string(address) do
-    :inet.ntoa(address) |> iodata_to_binary
+    :inet.ntoa(address) |> IO.iodata_to_binary
   end
 
   @doc """

@@ -47,7 +47,7 @@ defmodule Socket.SOCKS do
   end
 
   defp handshake(socket, 4, auth, { address, port }) do
-    user = if size(auth) >= 1 do
+    user = if tuple_size(auth) >= 1 do
       auth |> elem(0)
     else
       ""

@@ -260,7 +260,7 @@ defmodule Socket do
 
   @on_load :uris
 
-  defp uris do
+  def uris do
     URI.default_port "ws", 80
     URI.default_port "wss", 443
     :ok

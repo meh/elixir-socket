@@ -8,6 +8,7 @@
 
 defmodule Socket.Host do
   defstruct [:name, :aliases, :type, :length, :list]
+  @type t :: %{__struct__: __MODULE__}
 
   defp convert({ _, name, aliases, type, length, list }) do
     %Socket.Host{name: name, aliases: aliases, type: type, length: length, list: list}

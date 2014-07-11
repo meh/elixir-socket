@@ -67,6 +67,7 @@ defmodule Socket.Web do
   end
 
   defstruct [:socket, :version, :path, :origin, :protocols, :extensions, :key, :mask]
+  @type t :: %{__struct__: __MODULE__}
 
   @spec headers([{ name :: String.t, value :: String.t }], Socket.t) :: [{ name :: String.t, value :: String.t }]
   defp headers(acc, socket) do
@@ -347,7 +348,7 @@ defmodule Socket.Web do
   handshake, this separation is done because then you can verify the client can
   connect based on Origin header, path and other things.
   """
-  @spec accept(Keyword.t, t) :: { :ok, t } | { :error, error }
+  @spec accept(t, Keyword.t) :: { :ok, t } | { :error, error }
   def accept(%W{key: nil} = self, options \\ []) do
     try do
       { :ok, accept!(self, options) }
@@ -373,8 +374,11 @@ defmodule Socket.Web do
 
   In case of error, it raises.
   """
-  @spec accept!(Keyword.t, t) :: t | no_return
-  def accept!(%W{socket: socket, key: nil}, options \\ []) do
+  @spec accept!(t) :: t | no_return
+  def accept!(t), do: accept!(t, [])
+
+  @spec accept!(t, Keyword.t) :: t | no_return
+  def accept!(%W{socket: socket, key: nil}, options) do
     client = socket.accept!(options)
     client.packet!(:http_bin)
 

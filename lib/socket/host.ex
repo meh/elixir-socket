@@ -9,8 +9,20 @@
 defmodule Socket.Host do
   defstruct [:name, :aliases, :type, :length, :list]
 
+  @type t :: %Socket.Host{
+    name:    String.t,
+    aliases: [String.t],
+    type:    :inet | :inet6,
+    length:  integer,
+    list:    [tuple] }
+
   defp convert({ _, name, aliases, type, length, list }) do
-    %Socket.Host{name: name, aliases: aliases, type: type, length: length, list: list}
+    %Socket.Host{
+      name:    List.to_string(name),
+      aliases: aliases |> Enum.map(&List.to_string/1),
+      type:    type,
+      length:  length,
+      list:    list }
   end
 
   @doc """

@@ -384,7 +384,9 @@ defmodule Socket.Web do
   In case of error, it raises.
   """
   @spec accept!(Keyword.t, t) :: t | no_return
-  def accept!(%W{socket: socket, key: nil}, options \\ []) do
+  def accept!(socket, options \\ [])
+
+  def accept!(%W{socket: socket, key: nil}, options) do
     client = socket.accept!(options)
     client.packet!(:http_bin)
 

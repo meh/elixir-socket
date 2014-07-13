@@ -357,7 +357,7 @@ defmodule Socket.Web do
   handshake, this separation is done because then you can verify the client can
   connect based on Origin header, path and other things.
   """
-  @spec accept(Keyword.t, t) :: { :ok, t } | { :error, error }
+  @spec accept(t, Keyword.t) :: { :ok, t } | { :error, error }
   def accept(%W{key: nil} = self, options \\ []) do
     try do
       { :ok, accept!(self, options) }

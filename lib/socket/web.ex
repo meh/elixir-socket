@@ -68,6 +68,16 @@ defmodule Socket.Web do
 
   defstruct [:socket, :version, :path, :origin, :protocols, :extensions, :key, :mask]
 
+  @type t :: %Socket.Web{
+    socket:     term,
+    version:    13,
+    path:       String.t,
+    origin:     String.t,
+    protocols:  [String.t],
+    extensions: [String.t],
+    key:        String.t,
+    mask:       boolean }
+
   @spec headers([{ name :: String.t, value :: String.t }], Socket.t) :: [{ name :: String.t, value :: String.t }]
   defp headers(acc, socket) do
     case socket |> Socket.Stream.recv! do

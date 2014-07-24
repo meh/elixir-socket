@@ -63,7 +63,7 @@ defmodule Socket.SOCKS do
           0x01 :: 8,
 
           # port in network byte order
-          port :: [size(16), big],
+          port :: big-size(16),
 
           # IP address in network byte order
           a :: 8,
@@ -90,7 +90,7 @@ defmodule Socket.SOCKS do
           0x01 :: 8,
 
           # port in network byte order
-          port :: [size(16), big],
+          port :: big-size(16),
 
           # invalid IP address
           0x00 :: 8,

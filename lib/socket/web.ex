@@ -66,7 +66,7 @@ defmodule Socket.Web do
     end
   end
 
-  defstruct [:socket, :version, :path, :origin, :protocols, :extensions, :key, :mask]
+  defstruct [:socket, :version, :path, :origin, :protocols, :extensions, :key, :mask, { :headers, %{} }]
 
   @type t :: %Socket.Web{
     socket:     term,
@@ -82,10 +82,10 @@ defmodule Socket.Web do
   defp headers(acc, socket) do
     case socket |> Socket.Stream.recv! do
       { :http_header, _, name, _, value } when name |> is_atom ->
-        [{ Atom.to_string(name) |> String.downcase, value } | acc] |> headers(socket)
+        acc |> Map.put(Atom.to_string(name) |> String.downcase, value) |> headers(socket)
 
       { :http_header, _, name, _, value } when name |> is_binary ->
-        [{ String.downcase(name), value } | acc] |> headers(socket)
+        acc |> Map.put(String.downcase(name), value) |> headers(socket)
 
       :http_eoh ->
         acc
@@ -226,7 +226,7 @@ defmodule Socket.Web do
 
     client |> Socket.packet(:http_bin)
     { :http_response, _, 101, _ } = client |> Socket.Stream.recv!
-    headers                       = headers([], client) |> Enum.into(%{})
+    headers                       = headers(%{}, client)
 
     if String.downcase(headers["upgrade"]) != "websocket" or
        String.downcase(headers["connection"]) != "upgrade" do
@@ -387,24 +387,24 @@ defmodule Socket.Web do
   def accept!(socket, options \\ [])
 
   def accept!(%W{socket: socket, key: nil}, options) do
-    client = socket.accept!(options)
-    client.packet!(:http_bin)
+    client = socket |> Socket.accept!(options)
+    client |> Socket.packet!(:http_bin)
 
-    path = case client.recv! do
+    path = case client |> Socket.Stream.recv! do
       { :http_request, :GET, { :abs_path, path }, _ } ->
         path
     end
 
-    headers = headers([], client)
+    headers = headers(%{}, client)
 
     if headers["upgrade"] != "websocket" or headers["connection"] != "Upgrade" do
-      client.close
+      client |> Socket.close
 
       raise RuntimeError, message: "malformed upgrade request"
     end
 
     unless headers["sec-websocket-key"] do
-      client.close
+      client |> Socket.close
 
       raise RuntimeError, message: "missing key"
     end
@@ -417,7 +417,7 @@ defmodule Socket.Web do
       String.split(e, ~r/\s*,\s*/)
     end
 
-    client.packet!(:raw)
+    client |> Socket.packet!(:raw)
 
     %W{socket: client,
        origin: headers["origin"],
@@ -425,7 +425,8 @@ defmodule Socket.Web do
        version: 13,
        key: headers["sec-websocket-key"],
        protocols: protocols,
-       extensions: extensions}
+       extensions: extensions,
+       headers: headers}
   end
 
   def accept!(%W{socket: socket, key: key}, options) do

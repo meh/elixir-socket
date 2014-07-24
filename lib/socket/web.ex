@@ -10,12 +10,24 @@ defmodule Socket.Web do
   @moduledoc ~S"""
   This module implements RFC 6455 WebSockets.
 
-  ## Examples
+  ## Client example
 
-      {:ok, sock} = Socket.Web.connect("echo.websocket.org")
-      sock |> Socket.Web.send({:text, "hello there"}) # you can also send binary using {:binary, "hello there"})
-      {:ok, data} = sock |> Socket.Web.recv
-      IO.inspect data
+      socket = Socket.Web.connect! "echo.websocket.org"
+      socket |> Socket.Web.send! { :text, "test" }
+      socket |> Socket.Web.recv! # => {:text, "test"}
+
+  ## Server example
+
+      server = Socket.Web.listen! 80
+      client = server |> Socket.Web.accept!
+
+      # here you can verify if you want to accept the request or not, call
+      # `Socket.Web.close!` if you don't want to accept it, or else call
+      # `Socket.Web.accept!`
+      client |> Socket.Web.accept!
+
+      # echo the first message
+      client |> Socket.Web.send!(client |> Socket.Web.recv!)
 
   """
 

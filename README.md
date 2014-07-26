@@ -1,8 +1,7 @@
 Elixir sockets made decent
 ==========================
 This library wraps `gen_tcp`, `gen_udp` and `gen_sctp`, `ssl` and implements
-websockets, it also implements smart garbage collection (if sockets aren't
-referenced anywhere, they are closed).
+websockets and socks.
 
 Examples
 --------
@@ -41,15 +40,26 @@ defmodule HTTP do
 end
 ```
 
-Connecting to a Websocket
--------------------------
+Websockets
+----------
+
+### Client
+
 ```elixir
-defmodule Ws do
-  def simple_ws_conn() do
-    {:ok, sock} = Socket.Web.connect("echo.websocket.org")
-    sock |> Socket.Web.send({:text, "hello there"}) # you can also send binary using {:binary, "hello there"})
-    {:ok, data} = sock |> Socket.Web.recv
-    IO.inspect data
-  end
-end
+socket = Socket.Web.connect! "echo.websocket.org"
+socket |> Socket.Web.send! { :text, "test" }
+socket |> Socket.Web.recv! # => {:text, "test"}
 ```
+
+### Server
+
+server = Socket.Web.listen! 80
+client = server |> Socket.Web.accept!
+
+# here you can verify if you want to accept the request or not, call
+# `Socket.Web.close!` if you don't want to accept it, or else call
+# `Socket.Web.accept!`
+client |> Socket.Web.accept!
+
+# echo the first message
+client |> Socket.Web.send!(client |> Socket.Web.recv!)

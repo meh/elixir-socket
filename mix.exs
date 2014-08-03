@@ -3,8 +3,8 @@ defmodule Socket.Mixfile do
 
   def project do
     [ app: :socket,
-      version: "0.2.6",
-      elixir: "~> 0.14.3",
+      version: "0.2.7",
+      elixir: "~> 0.15.0",
       package: package,
       description: "Socket handling library for Elixir" ]
   end
@@ -17,6 +17,6 @@ defmodule Socket.Mixfile do
   defp package do
     [ contributors: ["meh"],
       licenses: ["WTFPL"],
-      links: [ { "GitHub", "https://github.com/meh/elixir-socket" } ] ]
+      links: %{"GitHub" => "https://github.com/meh/elixir-socket"} ]
   end
 end

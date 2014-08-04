@@ -53,6 +53,7 @@ socket |> Socket.Web.recv! # => {:text, "test"}
 
 ### Server
 
+```elixir
 server = Socket.Web.listen! 80
 client = server |> Socket.Web.accept!
 
@@ -63,3 +64,4 @@ client |> Socket.Web.accept!
 
 # echo the first message
 client |> Socket.Web.send!(client |> Socket.Web.recv!)
+```

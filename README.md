@@ -29,7 +29,7 @@ defmodule HTTP do
     { { String.to_integer(code), text }, headers, body }
   end
 
-  def headers(acc, sock) do
+  defp headers(acc, sock) do
     case sock |> Socket.Stream.recv! do
       "\r\n" ->
         acc

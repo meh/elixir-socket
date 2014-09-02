@@ -36,7 +36,7 @@ defmodule Socket.Address do
   """
   @spec valid?(t) :: boolean
   def valid?(text) do
-    not nil?(parse(text))
+    not is_nil(parse(text))
   end
 
   @doc """

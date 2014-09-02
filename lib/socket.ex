@@ -403,11 +403,11 @@ end
 defimpl Socket.Protocol, for: Tuple do
   require Record
 
-  def equal?(self, other) when self |> Record.record?(:sslsocket) and other |> Record.record?(:sslsocket) do
+  def equal?(self, other) when self |> Record.is_record(:sslsocket) and other |> Record.is_record(:sslsocket) do
     self == other
   end
 
-  def equal?(self, other) when self |> Record.record?(:sslsocket) do
+  def equal?(self, other) when self |> Record.is_record(:sslsocket) do
     self |> elem(1) == other
   end
 
@@ -415,43 +415,43 @@ defimpl Socket.Protocol, for: Tuple do
     false
   end
 
-  def accept(self, options \\ []) when self |> Record.record?(:sslsocket) do
+  def accept(self, options \\ []) when self |> Record.is_record(:sslsocket) do
     Socket.SSL.accept(self, options)
   end
 
-  def options(self, opts) when self |> Record.record?(:sslsocket) do
+  def options(self, opts) when self |> Record.is_record(:sslsocket) do
     Socket.SSL.options(self, opts)
   end
 
-  def packet(self, type) when self |> Record.record?(:sslsocket) do
+  def packet(self, type) when self |> Record.is_record(:sslsocket) do
     :ssl.setopts(self, packet: type)
   end
 
-  def process(self, pid) when self |> Record.record?(:sslsocket) do
+  def process(self, pid) when self |> Record.is_record(:sslsocket) do
     :ssl.controlling_process(self, pid)
   end
 
-  def active(self) when self |> Record.record?(:sslsocket) do
+  def active(self) when self |> Record.is_record(:sslsocket) do
     :ssl.setopts(self, active: true)
   end
 
-  def active(self, :once) when self |> Record.record?(:sslsocket) do
+  def active(self, :once) when self |> Record.is_record(:sslsocket) do
     :ssl.setopts(self, active: :once)
   end
 
-  def passive(self) when self |> Record.record?(:sslsocket) do
+  def passive(self) when self |> Record.is_record(:sslsocket) do
     :ssl.setopts(self, active: false)
   end
 
-  def local(self) when self |> Record.record?(:sslsocket) do
+  def local(self) when self |> Record.is_record(:sslsocket) do
     :ssl.sockname(self)
   end
 
-  def remote(self) when self |> Record.record?(:sslsocket) do
+  def remote(self) when self |> Record.is_record(:sslsocket) do
     :ssl.peername(self)
   end
 
-  def close(self) when self |> Record.record?(:sslsocket) do
+  def close(self) when self |> Record.is_record(:sslsocket) do
     :ssl.close(self)
   end
 end

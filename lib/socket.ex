@@ -60,11 +60,11 @@ defmodule Socket do
   end
 
   def connect(%URI{scheme: "ws", host: host, port: port, path: path}) do
-    Socket.Web.connect(host, port, path)
+    Socket.Web.connect(host, port, path: path)
   end
 
   def connect(%URI{scheme: "wss", host: host, port: port, path: path}) do
-    Socket.Web.connect(host, port, path, secure: true)
+    Socket.Web.connect(host, port, path: path, secure: true)
   end
 
   @doc """
@@ -85,11 +85,11 @@ defmodule Socket do
   end
 
   def connect!(%URI{scheme: "ws", host: host, port: port, path: path}) do
-    Socket.Web.connect!(host, port, path)
+    Socket.Web.connect!(host, port, path: path)
   end
 
   def connect!(%URI{scheme: "wss", host: host, port: port, path: path}) do
-    Socket.Web.connect!(host, port, path, secure: true)
+    Socket.Web.connect!(host, port, path: path, secure: true)
   end
 
   @doc """

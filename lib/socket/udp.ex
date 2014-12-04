@@ -23,19 +23,12 @@ defmodule Socket.UDP do
   * `:version` sets the IP version to use
   * `:broadcast` enables broadcast sending
 
-  ## Smart garbage collection
-
-  Normally sockets in Erlang are closed when the controlling process exits,
-  with smart garbage collection the controlling process will be the
-  `Socket.Manager` and it will be closed when there are no more references to
-  it.
-
   ## Examples
 
       server = Socket.UDP.open!(1337)
 
-      { data, client } = server.recv!
-      client.send! data
+      { data, client } = server |> Socket.Datagram.recv!
+      server |> Socket.Datagram.send! data, client
 
   """
 

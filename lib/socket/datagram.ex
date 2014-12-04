@@ -16,19 +16,19 @@ defprotocol Socket.Datagram.Protocol do
   @doc """
   Receive a packet from the socket.
   """
-  @spec recv(t) :: { :ok, iodata } | { :error, term }
+  @spec recv(t) :: { :ok, { iodata, { Socket.Address.t, :inet.port_number } } } | { :error, term }
   def recv(self)
 
   @doc """
   Receive a packet with the given options or with the given size.
   """
-  @spec recv(t, non_neg_integer | Keyword.t) :: { :ok, iodata } | { :error, term }
+  @spec recv(t, non_neg_integer | Keyword.t) :: { :ok, { iodata, { Socket.Address.t, :inet.port_number } } } | { :error, term }
   def recv(self, length_or_options)
 
   @doc """
   Receive a packet with the given size and options.
   """
-  @spec recv(t, non_neg_integer, Keyword.t) :: { :ok, iodata } | { :error, term }
+  @spec recv(t, non_neg_integer, Keyword.t) :: { :ok, { iodata, { Socket.Address.t, :inet.port_number } } } | { :error, term }
   def recv(self, length, options)
 end
 

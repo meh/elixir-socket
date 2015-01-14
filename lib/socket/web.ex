@@ -732,7 +732,7 @@ defmodule Socket.Web do
   @spec send(packet, Keyword.t, t) :: :ok | { :error, error }
   def send(packet, options \\ [], self)
 
-  def send(%W{socket: socket, version: 13, mask: mask}, { opcode, data }, options) when data?(opcode) and opcode != :close do
+  def send(%W{socket: socket, version: 13, mask: mask}, { opcode, data }, options) when opcode != :close do
     socket |> Socket.Stream.send(
       << 1              :: 1,
          0              :: 3,

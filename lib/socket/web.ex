@@ -608,8 +608,8 @@ defmodule Socket.Web do
   Receive a packet from the websocket.
   """
   @spec recv(t) :: { :ok, packet } | { :error, error }
-  def recv(%W{socket: socket, version: 13} = self) do
-    case socket |> Socket.Stream.recv(2) do
+  def recv(%W{socket: socket, version: 13} = self, options \\ []) do
+    case socket |> Socket.Stream.recv(2, options) do
       # a non fragmented message packet
       { :ok, << 1      :: 1,
                 0      :: 3,
@@ -682,8 +682,8 @@ defmodule Socket.Web do
   Receive a packet from the websocket, raising if an error occurs.
   """
   @spec recv!(t) :: packet | no_return
-  def recv!(self) do
-    case recv(self) do
+  def recv!(self, options \\ []) do
+    case recv(self, options) do
       { :ok, packet } ->
         packet
 

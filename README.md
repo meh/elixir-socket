@@ -12,18 +12,18 @@ defmodule HTTP do
     get(URI.parse(uri))
   end
 
-  def get(URI.Info[host: host, port: port, path: path]) do
+  def get(%URI{host: host, port: port, path: path}) do
     sock = Socket.TCP.connect! host, port, packet: :line
     sock |> Socket.Stream.send! "GET #{path || "/"} HTTP/1.1\r\nHost: #{host}\r\n\r\n"
 
-    [_, code, text] = Regex.run %r"HTTP/1.1 (.*?) (.*?)\s*$", sock |> Socket.Stream.recv!
+    [_, code, text] = Regex.run ~r"HTTP/1.1 (.*?) (.*?)\s*$", sock |> Socket.Stream.recv!
 
     headers = headers([], sock) |> Enum.into(%{})
 
     sock |> Socket.packet! :raw
-    body = sock |> Socket.Stream.recv!(binary_to_integer(headers["Content-Length"]))
+    body = sock |> Socket.Stream.recv!(String.to_integer(headers["Content-Length"]))
 
-    { { binary_to_integer(code), text }, headers, body }
+    { { String.to_integer(code), text }, headers, body }
   end
 
   defp headers(acc, sock) do
@@ -32,7 +32,7 @@ defmodule HTTP do
         acc
 
       line ->
-        [_, name, value] = Regex.run %r/^(.*?):\s*(.*?)\s*$/, line
+        [_, name, value] = Regex.run ~r/^(.*?):\s*(.*?)\s*$/, line
 
         headers([{ name, value } | acc], sock)
     end

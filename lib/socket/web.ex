@@ -395,7 +395,7 @@ defmodule Socket.Web do
 
   In case of error, it raises.
   """
-  @spec accept!(Keyword.t, t) :: t | no_return
+  @spec accept!(t, Keyword.t) :: t | no_return
   def accept!(socket, options \\ [])
 
   def accept!(%W{socket: socket, key: nil}, options) do
@@ -536,7 +536,7 @@ defmodule Socket.Web do
     acc
   end
 
-  @spec recv(boolean, non_neg_integer, t) :: { :ok, binary } | { :error, error }
+  @spec recv(t, boolean, non_neg_integer) :: { :ok, binary } | { :error, error }
   defp recv(%W{socket: socket, version: 13}, mask, length) do
     length = cond do
       length == 127 ->
@@ -728,9 +728,9 @@ defmodule Socket.Web do
   @doc """
   Send a packet to the websocket.
   """
-  @spec send(packet, t)            :: :ok | { :error, error }
-  @spec send(packet, Keyword.t, t) :: :ok | { :error, error }
-  def send(packet, options \\ [], self)
+  @spec send(t, packet)            :: :ok | { :error, error }
+  @spec send(t, packet, Keyword.t) :: :ok | { :error, error }
+  def send(self, packet, options \\ [])
 
   def send(%W{socket: socket, version: 13, mask: mask}, { opcode, data }, options) when data?(opcode) and opcode != :close do
     socket |> Socket.Stream.send(

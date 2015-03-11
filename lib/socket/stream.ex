@@ -43,6 +43,13 @@ defprotocol Socket.Stream.Protocol do
   """
   @spec shutdown(t, :both | :read | :write) :: :ok | { :error, term }
   def shutdown(self, how \\ :both)
+
+  @doc """
+  Close the socket.
+  """
+  @spec close(t) :: :ok | {:error, term}
+  def close(self)
+
 end
 
 defmodule Socket.Stream do
@@ -70,6 +77,9 @@ defmodule Socket.Stream do
   defbang     shutdown(self), to: Socket.Stream.Protocol
   defdelegate shutdown(self, how), to: Socket.Stream.Protocol
   defbang     shutdown(self, how), to: Socket.Stream.Protocol
+
+  defdelegate close(self), to: Socket.Stream.Protocol
+  defbang     close(self), to: Socket.Stream.Protocol
 
   @doc """
   Read from the IO device and send to the socket following the given options.
@@ -184,6 +194,10 @@ defimpl Socket.Stream.Protocol, for: Port do
       :both  -> :read_write
     end)
   end
+
+  def close(self) do
+    :gen_tcp.close(self)
+  end
 end
 
 defimpl Socket.Stream.Protocol, for: Tuple do
@@ -254,5 +268,9 @@ defimpl Socket.Stream.Protocol, for: Tuple do
       :write -> :write
       :both  -> :read_write
     end)
+  end
+
+  def close(self) do
+    :ssl.close(self)
   end
 end

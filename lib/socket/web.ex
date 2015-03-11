@@ -839,8 +839,10 @@ defmodule Socket.Web do
   Close the socket sending a close request, unless `:wait` is set to `false` it
   blocks until the close response has been received, and then closes the
   underlying socket.
+  If :reason? is set to true and the response contains a closing reason
+  and custom data the function returns it as a tuple.
   """
-  @spec close(t, atom, Keyword.t) :: :ok | { :error, error }
+  @spec close(t, atom, Keyword.t) :: :ok  | {:ok, atom, binary} | { :error, error }
   def close(%W{socket: socket, version: 13, mask: mask} = self, reason, options \\ []) do
     if reason |> is_tuple do
       { reason, data } = reason
@@ -857,20 +859,25 @@ defmodule Socket.Web do
            << close_code(reason) :: 16, data :: binary >>) :: binary >>)
 
     unless options[:wait] == false do
-      do_close(self, recv(self))
+      do_close(self, recv(self), Dict.get(options, :reason?, false))
     end
   end
 
-  defp do_close(self, { :ok, :close }) do
+  defp do_close(self, { :ok, :close }, _) do
     abort(self)
   end
 
-  defp do_close(self, { :ok, { :close, _, _ } }) do
+  defp do_close(self, { :ok, { :close, _, _ } }, false) do
     abort(self)
   end
 
-  defp do_close(self, _) do
-    do_close(self, recv(self))
+  defp do_close(self, { :ok, { :close, reason, data } }, true) do
+    abort(self)
+    {:ok, reason, data}
+  end
+
+  defp do_close(self, _, reason?) do
+    do_close(self, recv(self), reason?)
   end
 
   @doc """
@@ -879,6 +886,7 @@ defmodule Socket.Web do
   """
   @spec abort(t) :: :ok | { :error, error }
   def abort(%W{socket: socket}) do
-    close(socket)
+    Socket.Stream.close(socket)
   end
+
 end

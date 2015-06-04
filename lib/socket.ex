@@ -41,7 +41,7 @@ defmodule Socket do
 
   ## Example
 
-      { :ok, client } = Sockect.connect "tcp://google.com:80"
+      { :ok, client } = Socket.connect "tcp://google.com:80"
       client.send "GET / HTTP/1.1\r\n"
       client.recv
 
@@ -107,7 +107,7 @@ defmodule Socket do
 
   ## Example
 
-      { :ok, server } = Sockect.listen "tcp://*:1337"
+      { :ok, server } = Socket.listen "tcp://*:1337"
       client = server.accept!(packet: :line)
       client.send(client.recv)
       client.close

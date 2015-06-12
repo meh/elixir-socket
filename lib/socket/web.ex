@@ -155,8 +155,11 @@ defmodule Socket.Web do
     try do
       { :ok, connect!(address, port, options) }
     rescue
-      MatchError ->
-        { :error, "malformed handshake" }
+      e in [MatchError] ->
+        case e.term do
+          { :http_response, _, http_code, http_message } -> { :error, { http_code, http_message } }
+          _ -> { :error, "malformed handshake" }
+        end
 
       e in [RuntimeError] ->
         { :error, e.message }

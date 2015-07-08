@@ -412,7 +412,7 @@ defmodule Socket.Web do
 
     headers = headers(%{}, client)
 
-    if headers["upgrade"] != "websocket" or headers["connection"] != "Upgrade" do
+    if headers["upgrade"] != "websocket" and headers["connection"] != "Upgrade" do
       client |> Socket.close
 
       raise RuntimeError, message: "malformed upgrade request"

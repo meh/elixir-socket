@@ -85,7 +85,7 @@ defmodule Socket.UDP do
   Create a UDP socket listening on the given port and using the given options,
   raising if an error occurs.
   """
-  @spec open!(:ient.port_number, Keyword.t) :: t | no_return
+  @spec open!(:inet.port_number, Keyword.t) :: t | no_return
   defbang open(port, options)
 
   @doc """

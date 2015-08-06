@@ -440,7 +440,7 @@ defmodule Socket.SSL do
   """
   @spec info(t) :: { :ok, list } | { :error, term }
   def info(sock) when sock |> Record.is_record(:sslsocket) do
-    :ssl.connection_info(sock)
+    :ssl.connection_information(sock)
   end
 
   @doc """
@@ -464,15 +464,15 @@ defmodule Socket.SSL do
   defbang certificate(sock)
 
   @doc """
-  Get the negotiated next protocol.
+  Get the negotiated protocol.
   """
-  @spec next_protocol(t) :: String.t | nil
-  def next_protocol(sock) when sock |> Record.is_record(:sslsocket) do
-    case :ssl.negotiated_next_protocol(sock) do
+  @spec negotiated_protocol(t) :: String.t | nil
+  def negotiated_protocol(sock) when sock |> Record.is_record(:sslsocket) do
+    case :ssl.negotiated_protocol(sock) do
       { :ok, protocol } ->
         protocol
 
-      { :error, :next_protocol_not_negotiated } ->
+      { :error, :protocol_not_negotiated } ->
         nil
     end
   end

@@ -90,14 +90,14 @@ defmodule Socket.Web do
     key:        String.t,
     mask:       boolean }
 
-  @spec headers([{ name :: String.t, value :: String.t }], Socket.t) :: [{ name :: String.t, value :: String.t }]
-  defp headers(acc, socket) do
-    case socket |> Socket.Stream.recv! do
+  @spec headers(%{String.t => String.t}, Socket.t, Keyword.t) :: %{String.t => String.t}
+  defp headers(acc, socket, options) do
+    case socket |> Socket.Stream.recv!(options) do
       { :http_header, _, name, _, value } when name |> is_atom ->
-        acc |> Map.put(Atom.to_string(name) |> String.downcase, value) |> headers(socket)
+        acc |> Map.put(Atom.to_string(name) |> String.downcase, value) |> headers(socket, options)
 
       { :http_header, _, name, _, value } when name |> is_binary ->
-        acc |> Map.put(String.downcase(name), value) |> headers(socket)
+        acc |> Map.put(String.downcase(name), value) |> headers(socket, options)
 
       :http_eoh ->
         acc
@@ -240,8 +240,8 @@ defmodule Socket.Web do
       "\r\n"]
 
     client |> Socket.packet(:http_bin)
-    { :http_response, _, 101, _ } = client |> Socket.Stream.recv!
-    headers                       = headers(%{}, client)
+    { :http_response, _, 101, _ } = client |> Socket.Stream.recv!(options)
+    headers                       = headers(%{}, client, options)
 
     if String.downcase(headers["upgrade"]) != "websocket" or
        String.downcase(headers["connection"]) != "upgrade" do
@@ -271,7 +271,7 @@ defmodule Socket.Web do
   Listens on the default port (80).
   """
   @spec listen :: { :ok, t } | { :error, error }
-  def listen do
+  def listen do 
     listen([])
   end
 
@@ -322,7 +322,7 @@ defmodule Socket.Web do
   Listens on the default port (80), raising if an error occurs.
   """
   @spec listen! :: t | no_return
-  def listen! do
+  def listen! do 
     listen!([])
   end
 
@@ -405,12 +405,12 @@ defmodule Socket.Web do
     client = socket |> Socket.accept!(options)
     client |> Socket.packet!(:http_bin)
 
-    path = case client |> Socket.Stream.recv! do
+    path = case client |> Socket.Stream.recv!(options) do
       { :http_request, :GET, { :abs_path, path }, _ } ->
         path
     end
 
-    headers = headers(%{}, client)
+    headers = headers(%{}, client, options)
 
     if headers["upgrade"] != "websocket" and headers["connection"] != "Upgrade" do
       client |> Socket.close
@@ -539,11 +539,11 @@ defmodule Socket.Web do
     acc
   end
 
-  @spec recv(t, boolean, non_neg_integer) :: { :ok, binary } | { :error, error }
-  defp recv(%W{socket: socket, version: 13}, mask, length) do
+  @spec recv(t, boolean, non_neg_integer, Keyword.t) :: { :ok, binary } | { :error, error }
+  defp recv(%W{socket: socket, version: 13}, mask, length, options) do
     length = cond do
       length == 127 ->
-        case socket |> Socket.Stream.recv(8) do
+        case socket |> Socket.Stream.recv(8, options) do
           { :ok, << length :: 64 >> } ->
             length
 
@@ -552,7 +552,7 @@ defmodule Socket.Web do
         end
 
       length == 126 ->
-        case socket |> Socket.Stream.recv(2) do
+        case socket |> Socket.Stream.recv(2, options) do
           { :ok, << length :: 16 >> } ->
             length
 
@@ -570,9 +570,9 @@ defmodule Socket.Web do
 
       length ->
         if mask do
-          case socket |> Socket.Stream.recv(4) do
+          case socket |> Socket.Stream.recv(4, options) do
             { :ok, << key :: 32 >> } ->
-              case socket |> Socket.Stream.recv(length) do
+              case socket |> Socket.Stream.recv(length, options) do
                 { :ok, data } ->
                   { :ok, unmask(key, data) }
 
@@ -584,7 +584,7 @@ defmodule Socket.Web do
               error
           end
         else
-          case socket |> Socket.Stream.recv(length) do
+          case socket |> Socket.Stream.recv(length, options) do
             { :ok, data } ->
               { :ok, data }
 
@@ -595,9 +595,9 @@ defmodule Socket.Web do
     end
   end
 
-  defmacrop on_success(result) do
+  defmacrop on_success(result, options) do
     quote do
-      case recv(var!(self), var!(mask) == 1, var!(length)) do
+      case recv(var!(self), var!(mask) == 1, var!(length), unquote(options)) do
         { :ok, var!(data) } ->
           { :ok, unquote(result) }
 
@@ -610,16 +610,17 @@ defmodule Socket.Web do
   @doc """
   Receive a packet from the websocket.
   """
-  @spec recv(t) :: { :ok, packet } | { :error, error }
-  def recv(%W{socket: socket, version: 13} = self) do
-    case socket |> Socket.Stream.recv(2) do
+  @spec recv(t, Keyword.t) :: { :ok, packet } | { :error, error }
+  def recv(self, options \\ [])
+  def recv(%W{socket: socket, version: 13} = self, options) do
+    case socket |> Socket.Stream.recv(2, options) do
       # a non fragmented message packet
       { :ok, << 1      :: 1,
                 0      :: 3,
                 opcode :: 4,
                 mask   :: 1,
                 length :: 7 >> } when known?(opcode) and data?(opcode) ->
-        case on_success { opcode(opcode), data } do
+        case on_success({ opcode(opcode), data }, options) do
           { :ok, { :text, data } } = result ->
             if String.valid?(data) do
               result
@@ -637,7 +638,7 @@ defmodule Socket.Web do
                 opcode :: 4,
                 mask   :: 1,
                 length :: 7 >> } when known?(opcode) and not control?(opcode) ->
-        on_success { :fragmented, opcode(opcode), data }
+        on_success({ :fragmented, opcode(opcode), data }, options)
 
       # a fragmented continuation
       { :ok, << 0      :: 1,
@@ -645,7 +646,7 @@ defmodule Socket.Web do
                 0      :: 4,
                 mask   :: 1,
                 length :: 7 >> } ->
-        on_success { :fragmented, :continuation, data }
+        on_success({ :fragmented, :continuation, data }, options)
 
       # final fragmented packet
       { :ok, << 1      :: 1,
@@ -653,7 +654,7 @@ defmodule Socket.Web do
                 0      :: 4,
                 mask   :: 1,
                 length :: 7 >> } ->
-        on_success { :fragmented, :end, data }
+        on_success({ :fragmented, :end, data }, options)
 
       # control packet
       { :ok, << 1      :: 1,
@@ -661,17 +662,13 @@ defmodule Socket.Web do
                 opcode :: 4,
                 mask   :: 1,
                 length :: 7 >> } when known?(opcode) and control?(opcode) ->
-        on_success case opcode(opcode), do: (
-          :ping -> { :ping, data }
-          :pong -> { :pong, data }
-
-          :close -> case data do
-            <<>> ->
-              :close
-
-            << code :: 16, rest :: binary >> ->
-              { :close, close_code(code), rest }
-          end)
+        case { opcode(opcode), data } do
+          { :ping, _ } -> { :ping, data }
+          { :pong, _ } -> { :pong, data }
+          { :close, <<>> } -> :close
+          { :close, << code :: 16, rest :: binary >> } -> { :close, close_code(code), rest }
+        end
+        |> on_success(options)
 
       { :ok, _ } ->
         { :error, :protocol_error }
@@ -684,9 +681,9 @@ defmodule Socket.Web do
   @doc """
   Receive a packet from the websocket, raising if an error occurs.
   """
-  @spec recv!(t) :: packet | no_return
-  def recv!(self) do
-    case recv(self) do
+  @spec recv!(t, Keyword.t) :: packet | no_return
+  def recv!(self, options \\ []) do
+    case recv(self, options) do
       { :ok, packet } ->
         packet
 
@@ -862,25 +859,29 @@ defmodule Socket.Web do
            << close_code(reason) :: 16, data :: binary >>) :: binary >>)
 
     unless options[:wait] == false do
-      do_close(self, recv(self), Dict.get(options, :reason?, false))
+      do_close(self, recv(self, options), Dict.get(options, :reason?, false), options)
     end
   end
 
-  defp do_close(self, { :ok, :close }, _) do
+  defp do_close(self, { :ok, :close }, _, _) do
     abort(self)
   end
 
-  defp do_close(self, { :ok, { :close, _, _ } }, false) do
+  defp do_close(self, { :ok, { :close, _, _ } }, false, _) do
     abort(self)
   end
 
-  defp do_close(self, { :ok, { :close, reason, data } }, true) do
+  defp do_close(self, { :ok, { :close, reason, data } }, true, _) do
     abort(self)
     {:ok, reason, data}
   end
 
-  defp do_close(self, _, reason?) do
-    do_close(self, recv(self), reason?)
+  defp do_close(self, { :ok, { :error, _ } }, _, _) do
+    abort(self)
+  end
+
+  defp do_close(self, _, reason?, options) do
+    do_close(self, recv(self, options), reason?, options)
   end
 
   @doc """

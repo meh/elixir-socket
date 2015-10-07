@@ -271,7 +271,9 @@ defmodule Socket.Web do
   Listens on the default port (80).
   """
   @spec listen :: { :ok, t } | { :error, error }
-  def listen, do: listen([])
+  def listen do 
+    listen([])
+  end
 
   @doc """
   Listens on the given port or with the given options.
@@ -320,7 +322,9 @@ defmodule Socket.Web do
   Listens on the default port (80), raising if an error occurs.
   """
   @spec listen! :: t | no_return
-  def listen!, do: listen!([])
+  def listen! do 
+    listen!([])
+  end
 
   @doc """
   Listens on the given port or with the given options, raising if an error
@@ -658,17 +662,13 @@ defmodule Socket.Web do
                 opcode :: 4,
                 mask   :: 1,
                 length :: 7 >> } when known?(opcode) and control?(opcode) ->
-        on_success((case opcode(opcode), do: (
-          :ping -> { :ping, data }
-          :pong -> { :pong, data }
-
-          :close -> case data do
-            <<>> ->
-              :close
-
-            << code :: 16, rest :: binary >> ->
-              { :close, close_code(code), rest }
-          end)), options)
+        case { opcode(opcode), data } do
+          { :ping, _ } -> { :ping, data }
+          { :pong, _ } -> { :pong, data }
+          { :close, <<>> } -> :close
+          { :close, << code :: 16, rest :: binary >> } -> { :close, close_code(code), rest }
+        end
+        |> on_success(options)
 
       { :ok, _ } ->
         { :error, :protocol_error }

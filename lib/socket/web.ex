@@ -568,6 +568,9 @@ defmodule Socket.Web do
       { :error, _ } = error ->
         error
 
+      0 ->
+        { :ok, "" }
+
       length ->
         if mask do
           case socket |> Socket.Stream.recv(4, options) do
@@ -738,35 +741,43 @@ defmodule Socket.Web do
   def send(self, packet, options \\ [])
 
   def send(%W{socket: socket, version: 13, mask: mask}, { opcode, data }, options) when opcode != :close do
+    if Keyword.has_key?(options, :mask), do: mask = options[:mask]
+
     socket |> Socket.Stream.send(
       << 1              :: 1,
          0              :: 3,
          opcode(opcode) :: 4,
-         forge(options[:mask] || mask, data) :: binary >>)
+         forge(mask, data) :: binary >>)
   end
 
   def send(%W{socket: socket, version: 13, mask: mask}, { :fragmented, :end, data }, options) do
+    if Keyword.has_key?(options, :mask), do: mask = options[:mask]
+
     socket |> Socket.Stream.send(
       << 1 :: 1,
          0 :: 3,
          0 :: 4,
-         forge(options[:mask] || mask, data) :: binary >>)
+         forge(mask, data) :: binary >>)
   end
 
   def send(%W{socket: socket, version: 13, mask: mask}, { :fragmented, :continuation, data }, options) do
+    if Keyword.has_key?(options, :mask), do: mask = options[:mask]
+
     socket |> Socket.Stream.send(
       << 0 :: 1,
          0 :: 3,
          0 :: 4,
-         forge(options[:mask] || mask, data) :: binary >>)
+         forge(mask, data) :: binary >>)
   end
 
   def send(%W{socket: socket, version: 13, mask: mask}, { :fragmented, opcode, data }, options) do
+    if Keyword.has_key?(options, :mask), do: mask = options[:mask]
+
     socket |> Socket.Stream.send(
       << 0              :: 1,
          0              :: 3,
          opcode(opcode) :: 4,
-         forge(options[:mask] || mask, data) :: binary >>)
+         forge(mask, data) :: binary >>)
   end
 
   @doc """
@@ -855,12 +866,14 @@ defmodule Socket.Web do
       data = <<>>
     end
 
+    if Keyword.has_key?(options, :mask), do: mask = options[:mask]
+
     socket |> Socket.Stream.send(
       << 1              :: 1,
          0              :: 3,
          opcode(:close) :: 4,
 
-         forge(options[:mask] || mask,
+         forge(mask,
            << close_code(reason) :: 16, data :: binary >>) :: binary >>)
 
     unless options[:wait] == false do

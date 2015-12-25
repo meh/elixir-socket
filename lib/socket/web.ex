@@ -568,31 +568,36 @@ defmodule Socket.Web do
       { :error, _ } = error ->
         error
 
-      0 ->
-        { :ok, "" }
-
       length ->
         if mask do
           case socket |> Socket.Stream.recv(4, options) do
             { :ok, << key :: 32 >> } ->
-              case socket |> Socket.Stream.recv(length, options) do
-                { :ok, data } ->
-                  { :ok, unmask(key, data) }
+              if length > 0 do
+                case socket |> Socket.Stream.recv(length, options) do
+                  { :ok, data } ->
+                    { :ok, unmask(key, data) }
 
-                { :error, _ } = error ->
-                  error
+                  { :error, _ } = error ->
+                    error
+                end
+              else
+                { :ok, "" }
               end
 
             { :error, _ } = error ->
               error
           end
         else
-          case socket |> Socket.Stream.recv(length, options) do
-            { :ok, data } ->
-              { :ok, data }
+          if length > 0 do
+            case socket |> Socket.Stream.recv(length, options) do
+              { :ok, data } ->
+                { :ok, data }
 
-            { :error, _ } = error ->
-              error
+              { :error, _ } = error ->
+                error
+            end
+          else
+            { :ok, "" }
           end
         end
     end

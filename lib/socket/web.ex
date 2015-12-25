@@ -803,7 +803,7 @@ defmodule Socket.Web do
   Send a ping request with the optional cookie, raising if an error occurs.
   """
   @spec ping!(t)         :: :ok | no_return
-  @spec ping!(binary, t) :: :ok | no_return
+  @spec ping!(t, binary) :: :ok | no_return
   def ping!(self, cookie \\ :crypto.rand_bytes(32)) do
     send!(self, { :ping, cookie })
 

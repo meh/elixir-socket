@@ -315,11 +315,11 @@ defmodule Socket.TCP do
     end
 
     if opts = Keyword.get(options, :options) do
-      if List.member?(opts, :keepalive) do
+      if Enum.member?(opts, :keepalive) do
         args = [{ :keepalive, true } | args]
       end
 
-      if List.member?(opts, :nodelay) do
+      if Enum.member?(opts, :nodelay) do
         args = [{ :nodelay, true } | args]
       end
     end

@@ -92,7 +92,7 @@ defmodule Socket.Address do
       netsize >= 8 ->
         addrpart
 
-      netsize >= 1 and netsize < 8 ->
+      netsize in 1 .. 7 ->
         case netsize do
           1 -> Bitwise.band(addrpart, 0x80)
           2 -> Bitwise.band(addrpart, 0xC0)
@@ -113,7 +113,7 @@ defmodule Socket.Address do
       netsize >= 16 ->
         addrpart
 
-      netsize >= 1 and netsize < 8 ->
+      netsize in 1 .. 15 ->
         case netsize do
           1  -> Bitwise.band(addrpart, 0x8000)
           2  -> Bitwise.band(addrpart, 0xC000)

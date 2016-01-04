@@ -572,24 +572,32 @@ defmodule Socket.Web do
         if mask do
           case socket |> Socket.Stream.recv(4, options) do
             { :ok, << key :: 32 >> } ->
-              case socket |> Socket.Stream.recv(length, options) do
-                { :ok, data } ->
-                  { :ok, unmask(key, data) }
+              if length > 0 do
+                case socket |> Socket.Stream.recv(length, options) do
+                  { :ok, data } ->
+                    { :ok, unmask(key, data) }
 
-                { :error, _ } = error ->
-                  error
+                  { :error, _ } = error ->
+                    error
+                end
+              else
+                { :ok, "" }
               end
 
             { :error, _ } = error ->
               error
           end
         else
-          case socket |> Socket.Stream.recv(length, options) do
-            { :ok, data } ->
-              { :ok, data }
+          if length > 0 do
+            case socket |> Socket.Stream.recv(length, options) do
+              { :ok, data } ->
+                { :ok, data }
 
-            { :error, _ } = error ->
-              error
+              { :error, _ } = error ->
+                error
+            end
+          else
+            { :ok, "" }
           end
         end
     end
@@ -738,35 +746,43 @@ defmodule Socket.Web do
   def send(self, packet, options \\ [])
 
   def send(%W{socket: socket, version: 13, mask: mask}, { opcode, data }, options) when opcode != :close do
+    if Keyword.has_key?(options, :mask), do: mask = options[:mask]
+
     socket |> Socket.Stream.send(
       << 1              :: 1,
          0              :: 3,
          opcode(opcode) :: 4,
-         forge(options[:mask] || mask, data) :: binary >>)
+         forge(mask, data) :: binary >>)
   end
 
   def send(%W{socket: socket, version: 13, mask: mask}, { :fragmented, :end, data }, options) do
+    if Keyword.has_key?(options, :mask), do: mask = options[:mask]
+
     socket |> Socket.Stream.send(
       << 1 :: 1,
          0 :: 3,
          0 :: 4,
-         forge(options[:mask] || mask, data) :: binary >>)
+         forge(mask, data) :: binary >>)
   end
 
   def send(%W{socket: socket, version: 13, mask: mask}, { :fragmented, :continuation, data }, options) do
+    if Keyword.has_key?(options, :mask), do: mask = options[:mask]
+
     socket |> Socket.Stream.send(
       << 0 :: 1,
          0 :: 3,
          0 :: 4,
-         forge(options[:mask] || mask, data) :: binary >>)
+         forge(mask, data) :: binary >>)
   end
 
   def send(%W{socket: socket, version: 13, mask: mask}, { :fragmented, opcode, data }, options) do
+    if Keyword.has_key?(options, :mask), do: mask = options[:mask]
+
     socket |> Socket.Stream.send(
       << 0              :: 1,
          0              :: 3,
          opcode(opcode) :: 4,
-         forge(options[:mask] || mask, data) :: binary >>)
+         forge(mask, data) :: binary >>)
   end
 
   @doc """
@@ -803,7 +819,7 @@ defmodule Socket.Web do
   Send a ping request with the optional cookie, raising if an error occurs.
   """
   @spec ping!(t)         :: :ok | no_return
-  @spec ping!(binary, t) :: :ok | no_return
+  @spec ping!(t, binary) :: :ok | no_return
   def ping!(self, cookie \\ :crypto.rand_bytes(32)) do
     send!(self, { :ping, cookie })
 
@@ -855,12 +871,14 @@ defmodule Socket.Web do
       data = <<>>
     end
 
+    if Keyword.has_key?(options, :mask), do: mask = options[:mask]
+
     socket |> Socket.Stream.send(
       << 1              :: 1,
          0              :: 3,
          opcode(:close) :: 4,
 
-         forge(options[:mask] || mask,
+         forge(mask,
            << close_code(reason) :: 16, data :: binary >>) :: binary >>)
 
     unless options[:wait] == false do

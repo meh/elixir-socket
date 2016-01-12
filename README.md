@@ -51,6 +51,30 @@ socket |> Socket.Web.send! { :text, "test" }
 socket |> Socket.Web.recv! # => {:text, "test"}
 ```
 
+In order to connect to a TLS websocket, use the `secure: true` option:
+
+```elixir
+socket = Socket.Web.connect! "echo.websocket.org", secure: true
+```
+
+The `connect!` function also accepts other parameters, most notably the `path` parameter, which is used when the websocket server endpoint exists on a path below the domain ie. "example.com/websocket":
+
+```elixir
+socket = Socket.Web.connect! "example.com", path: "/websocket"
+```
+
+Note that websocket servers send ping messages. A pong reply from your client tells the server to keep the connection open and to send more data. If your client doesn't send a pong reply then the server will close the connection. Here's an example of how to get get both the data you want and reply to a server's pings:
+
+```elixir
+socket = Socket.Web.connect! "echo.websocket.org"
+case socket |> Socket.Web.recv! do
+  {:text, data} ->
+    # process data
+  {:ping, _ } ->
+    socket |> Socket.Web.send!({:pong, ""})
+end
+```
+
 ### Server
 
 ```elixir

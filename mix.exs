@@ -4,7 +4,7 @@ defmodule Socket.Mixfile do
   def project do
     [ app: :socket,
       version: "0.3.1",
-      elixir: "~> 1.0.0-rc1 or ~> 1.1.1-rc.0",
+      elixir: "~> 1.0.0 or ~> 1.1.1 or ~> 1.2.0",
       package: package,
       description: "Socket handling library for Elixir" ]
   end

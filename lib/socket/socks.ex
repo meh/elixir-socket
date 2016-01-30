@@ -55,7 +55,7 @@ defmodule Socket.SOCKS do
 
     case Socket.Address.parse(address) do
       { a, b, c, d } ->
-        case socket |> Socket.Stream.send <<
+        case socket |> Socket.Stream.send(<<
           # version
           0x04 :: 8,
 
@@ -73,7 +73,7 @@ defmodule Socket.SOCKS do
 
           # user name followed by NULL
           user :: binary,
-          0x00 :: 8 >> do
+          0x00 :: 8 >>) do
             :ok ->
               response(socket, 4)
 
@@ -82,7 +82,7 @@ defmodule Socket.SOCKS do
           end
 
       nil ->
-        case socket |> Socket.Stream.send <<
+        case socket |> Socket.Stream.send(<<
           # version
           0x04 :: 8,
 
@@ -104,7 +104,7 @@ defmodule Socket.SOCKS do
 
           # host followed by NULL
           address :: binary,
-          0x00    :: 8 >> do
+          0x00    :: 8 >>) do
             :ok ->
               response(socket, 4)
 

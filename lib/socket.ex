@@ -9,6 +9,9 @@
 defmodule Socket do
   @type t :: Socket.Protocol.t
 
+  @default_port_ws  80
+  @default_port_wss 443
+
   defmodule Error do
     defexception message: nil
 
@@ -60,11 +63,11 @@ defmodule Socket do
   end
 
   def connect(%URI{scheme: "ws", host: host, port: port, path: path}) do
-    Socket.Web.connect(host, port, path: path)
+    Socket.Web.connect(host, port || @default_port_ws, path: path)
   end
 
   def connect(%URI{scheme: "wss", host: host, port: port, path: path}) do
-    Socket.Web.connect(host, port, path: path, secure: true)
+    Socket.Web.connect(host, port || @default_port_wss, path: path, secure: true)
   end
 
   @doc """
@@ -85,11 +88,11 @@ defmodule Socket do
   end
 
   def connect!(%URI{scheme: "ws", host: host, port: port, path: path}) do
-    Socket.Web.connect!(host, port, path: path)
+    Socket.Web.connect!(host, port || @default_port_ws, path: path)
   end
 
   def connect!(%URI{scheme: "wss", host: host, port: port, path: path}) do
-    Socket.Web.connect!(host, port, path: path, secure: true)
+    Socket.Web.connect!(host, port || @default_port_wss, path: path, secure: true)
   end
 
   @doc """
@@ -127,11 +130,11 @@ defmodule Socket do
   end
 
   def listen(%URI{scheme: "ws", host: host, port: port}) do
-    Socket.Web.listen(port, local: [address: if(host == "*", do: "0.0.0.0", else: host)])
+    Socket.Web.listen(port || @default_port_ws, local: [address: if(host == "*", do: "0.0.0.0", else: host)])
   end
 
   def listen(%URI{scheme: "wss", host: host, port: port}) do
-    Socket.Web.listen(port, secure: true, local: [address: if(host == "*", do: "0.0.0.0", else: host)])
+    Socket.Web.listen(port || @default_port_wss, secure: true, local: [address: if(host == "*", do: "0.0.0.0", else: host)])
   end
 
   @doc """
@@ -152,11 +155,11 @@ defmodule Socket do
   end
 
   def listen!(%URI{scheme: "ws", host: host, port: port}) do
-    Socket.Web.listen!(port, local: [address: if(host == "*", do: "0.0.0.0", else: host)])
+    Socket.Web.listen!(port || @default_port_ws, local: [address: if(host == "*", do: "0.0.0.0", else: host)])
   end
 
   def listen!(%URI{scheme: "wss", host: host, port: port}) do
-    Socket.Web.listen!(port, secure: true, local: [address: if(host == "*", do: "0.0.0.0", else: host)])
+    Socket.Web.listen!(port || @default_port_wss, secure: true, local: [address: if(host == "*", do: "0.0.0.0", else: host)])
   end
 
   @doc false
@@ -258,15 +261,6 @@ defmodule Socket do
   defdelegate close(self), to: Socket.Protocol
   defbang close(self), to: Socket.Protocol
 
-  @on_load :uris
-
-  @doc false
-  def uris do
-    URI.default_port "ws", 80
-    URI.default_port "wss", 443
-
-    :ok
-  end
 end
 
 defprotocol Socket.Protocol do

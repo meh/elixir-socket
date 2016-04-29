@@ -5,6 +5,7 @@ defmodule Socket.Mixfile do
     [ app: :socket,
       version: "0.3.3",
       elixir: "~> 1.0.0 or ~> 1.1.1 or ~> 1.2.0",
+      deps: deps,
       package: package,
       description: "Socket handling library for Elixir" ]
   end
@@ -12,6 +13,10 @@ defmodule Socket.Mixfile do
   # Configuration for the OTP application
   def application do
     [ applications: [:crypto, :ssl] ]
+  end
+
+  defp deps do
+    [ { :ex_doc, "~> 0.11", only: [:dev] } ]
   end
 
   defp package do

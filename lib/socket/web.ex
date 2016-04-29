@@ -219,17 +219,17 @@ defmodule Socket.Web do
       Socket.TCP
     end
 
-    path           = options[:path] || "/"
-    origin         = options[:origin]
-    protocols      = options[:protocol]
-    extensions     = options[:extensions]
-    key            = :base64.encode(options[:key] || "fork the dongles")
-    custom_headers = options[:custom_headers] || %{}
+    path       = options[:path] || "/"
+    origin     = options[:origin]
+    protocols  = options[:protocol]
+    extensions = options[:extensions]
+    key        = :base64.encode(options[:key] || "fork the dongles")
+    headers    = options[:headers] || %{}
 
-    custom_headers = custom_headers
-                     |> Enum.into([]) 
-                     |> Enum.map(fn({k,v}) -> ["#{k}: #{v}", "\r\n"] end)
-                     |> List.flatten
+    headers = headers
+              |> Enum.into([])
+              |> Enum.map(fn({k,v}) -> ["#{k}: #{v}", "\r\n"] end)
+              |> List.flatten
 
     client = mod.connect!(address, port)
     client |> Socket.packet!(:raw)
@@ -243,7 +243,7 @@ defmodule Socket.Web do
       if(protocols, do: ["Sec-WebSocket-Protocol: #{Enum.join protocols, ", "}", "\r\n"], else: []),
       if(extensions, do: ["Sec-WebSocket-Extensions: #{Enum.join extensions, ", "}", "\r\n"], else: []),
       "Sec-WebSocket-Version: 13", "\r\n" | 
-      custom_headers ++ ["\r\n"]])
+      headers ++ ["\r\n"]])
 
     client |> Socket.packet(:http_bin)
     { :http_response, _, 101, _ } = client |> Socket.Stream.recv!(options)

@@ -686,6 +686,11 @@ defmodule Socket.Web do
           end
         end |> on_success(options)
 
+      { :ok, nil} ->
+        # 1006 is reserved for connection closed with no close frame
+        # https://tools.ietf.org/html/rfc6455#section-7.4.1
+        { :ok, { :close, close_code(1006), nil } }
+
       { :ok, _ } ->
         { :error, :protocol_error }
 

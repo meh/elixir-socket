@@ -36,9 +36,9 @@ defmodule Socket.TCP do
 
       server = Socket.TCP.listen!(1337, packet: :line)
 
-      client = server |> Socket.Stream.accept!
+      client = server |> Socket.accept!
       client |> Socket.Stream.send!(client |> Socket.Stream.recv!)
-      client |> Socket.close
+      client |> Socket.Stream.close
 
   """
 

@@ -712,7 +712,7 @@ defmodule Socket.Web do
         raise RuntimeError, message: "protocol error"
 
       { :error, code } ->
-        raise Socket.Error, code: code
+        raise Socket.Error, reason: code
     end
   end
 
@@ -804,7 +804,7 @@ defmodule Socket.Web do
         :ok
 
       { :error, code } ->
-        raise Socket.Error, code: code
+        raise Socket.Error, reason: code
     end
   end
 

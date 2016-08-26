@@ -106,8 +106,10 @@ defmodule Socket.SSL do
   end
 
   def connect(wrap, options) when options |> is_list do
-    unless wrap |> is_port do
-      wrap = wrap.to_port
+    wrap = unless wrap |> is_port do
+      wrap.to_port
+    else
+      wrap
     end
 
     :ssl.connect(wrap, options, options[:timeout] || :infinity)
@@ -130,8 +132,10 @@ defmodule Socket.SSL do
   """
   @spec connect(Socket.Address.t, :inet.port_number, Keyword.t) :: { :ok, t } | { :error, term }
   def connect(address, port, options) do
-    if address |> is_binary do
-      address = String.to_char_list(address)
+    address = if address |> is_binary do
+      String.to_char_list(address)
+    else
+      address
     end
 
     options = Keyword.put_new(options, :mode, :passive)
@@ -393,28 +397,40 @@ defmodule Socket.SSL do
         args
     end
 
-    if password = Keyword.get(options, :password) do
-      args = [{ :password, password } | args]
+    args = if password = Keyword.get(options, :password) do
+      [{ :password, password } | args]
+    else
+      args
     end
 
-    if Keyword.get(options, :renegotiation) == :secure do
-      args = [{ :secure_renegotiate, true } | args]
+    args = if Keyword.get(options, :renegotiation) == :secure do
+      [{ :secure_renegotiate, true } | args]
+    else
+      args
     end
 
-    if ciphers = Keyword.get(options, :ciphers) do
-      args = [{ :ciphers, ciphers } | args]
+    args = if ciphers = Keyword.get(options, :ciphers) do
+      [{ :ciphers, ciphers } | args]
+    else
+      args
     end
 
-    if depth = Keyword.get(options, :depth) do
-      args = [{ :depth, depth } | args]
+    args = if depth = Keyword.get(options, :depth) do
+      [{ :depth, depth } | args]
+    else
+      args
     end
 
-    if versions = Keyword.get(options, :versions) do
-      args = [{ :versions, versions } | args]
+    args = if versions = Keyword.get(options, :versions) do
+      [{ :versions, versions } | args]
+    else
+      args
     end
 
-    if hibernate = Keyword.get(options, :hibernate) do
-      args = [{ :hibernate_after, hibernate } | args]
+    args = if hibernate = Keyword.get(options, :hibernate) do
+      [{ :hibernate_after, hibernate } | args]
+    else
+      args
     end
 
     args = case Keyword.get(options, :reuse) do
@@ -428,8 +444,10 @@ defmodule Socket.SSL do
         args
     end
 
-    if protocols = Keyword.get(options, :advertised_protocols) do
-      args = [{ :next_protocols_advertised, protocols } | args]
+    args = if protocols = Keyword.get(options, :advertised_protocols) do
+      [{ :next_protocols_advertised, protocols } | args]
+    else
+      args
     end
 
     args

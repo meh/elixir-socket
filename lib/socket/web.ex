@@ -246,8 +246,8 @@ defmodule Socket.Web do
     { :http_response, _, 101, _ } = client |> Socket.Stream.recv!(options)
     headers                       = headers(%{}, client, options)
 
-    if String.downcase(headers["upgrade"]) != "websocket" or
-       String.downcase(headers["connection"]) != "upgrade" do
+    if String.downcase(headers["upgrade"] || "") != "websocket" or
+       String.downcase(headers["connection"] || "") != "upgrade" do
       client |> Socket.close
 
       raise RuntimeError, message: "malformed upgrade response"

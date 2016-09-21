@@ -267,40 +267,62 @@ defmodule Socket.TCP do
         [:binary | args]
     end
 
-    if size = Keyword.get(options, :size) do
-      args = [{ :packet_size, size } | args]
+    args = if size = Keyword.get(options, :size) do
+      [{ :packet_size, size } | args]
+    else
+      args
     end
 
-    if packet = Keyword.get(options, :packet) do
-      args = [{ :packet, packet } | args]
+    args = if packet = Keyword.get(options, :packet) do
+      [{ :packet, packet } | args]
+    else
+      args
     end
 
-    if backlog = Keyword.get(options, :backlog) do
-      args = [{ :backlog, backlog } | args]
+    args = if backlog = Keyword.get(options, :backlog) do
+      [{ :backlog, backlog } | args]
+    else
+      args
     end
 
-    if watermark = Keyword.get(options, :watermark) do
-      if low = Keyword.get(watermark, :low) do
-        args = [{ :low_watermark, low } | args]
+    args = if watermark = Keyword.get(options, :watermark) do
+      args = if low = Keyword.get(watermark, :low) do
+        [{ :low_watermark, low } | args]
+      else
+        args
       end
 
-      if high = Keyword.get(watermark, :high) do
-        args = [{ :high_watermark, high } | args]
+      args = if high = Keyword.get(watermark, :high) do
+        [{ :high_watermark, high } | args]
+      else
+        args
       end
+      args
+    else
+      args
     end
 
-    if local = Keyword.get(options, :local) do
-      if address = Keyword.get(local, :address) do
-        args = [{ :ip, Socket.Address.parse(address) } | args]
+    args = if local = Keyword.get(options, :local) do
+      args = if address = Keyword.get(local, :address) do
+        [{ :ip, Socket.Address.parse(address) } | args]
+      else
+        args
       end
 
-      if port = Keyword.get(local, :port) do
-        args = [{ :port, port } | args]
+      args = if port = Keyword.get(local, :port) do
+        [{ :port, port } | args]
+      else
+        args
       end
 
-      if fd = Keyword.get(local, :fd) do
-        args = [{ :fd, fd } | args]
+      args = if fd = Keyword.get(local, :fd) do
+        [{ :fd, fd } | args]
+      else
+        args
       end
+      args
+    else
+      args
     end
 
     args = case Keyword.get(options, :version) do
@@ -314,14 +336,21 @@ defmodule Socket.TCP do
         args
     end
 
-    if opts = Keyword.get(options, :options) do
-      if Enum.member?(opts, :keepalive) do
-        args = [{ :keepalive, true } | args]
+    args = if opts = Keyword.get(options, :options) do
+      args = if Enum.member?(opts, :keepalive) do
+        [{ :keepalive, true } | args]
+      else
+        args
       end
 
-      if Enum.member?(opts, :nodelay) do
-        args = [{ :nodelay, true } | args]
+      args = if Enum.member?(opts, :nodelay) do
+        [{ :nodelay, true } | args]
+      else
+        args
       end
+      args
+    else
+      args
     end
 
     args

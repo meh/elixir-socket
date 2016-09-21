@@ -139,14 +139,21 @@ defmodule Socket.UDP do
         [:binary | args]
     end
 
-    if local = Keyword.get(options, :local) do
-      if address = Keyword.get(local, :address) do
-        args = [{ :ip, Socket.Address.parse(address) } | args]
+    args = if local = Keyword.get(options, :local) do
+      args = if address = Keyword.get(local, :address) do
+        [{ :ip, Socket.Address.parse(address) } | args]
+      else
+        args
       end
 
-      if fd = Keyword.get(local, :fd) do
-        args = [{ :fd, fd } | args]
+      args = if fd = Keyword.get(local, :fd) do
+        [{ :fd, fd } | args]
+      else
+        args
       end
+      args
+    else
+      args
     end
 
     args = case Keyword.get(options, :version) do
@@ -160,26 +167,39 @@ defmodule Socket.UDP do
         args
     end
 
-    if Keyword.has_key?(options, :broadcast) do
-      args = [{ :broadcast, Keyword.get(options, :broadcast) } | args]
+    args = if Keyword.has_key?(options, :broadcast) do
+      [{ :broadcast, Keyword.get(options, :broadcast) } | args]
+    else
+      args
     end
 
-    if multicast = Keyword.get(options, :multicast) do
-      if address = Keyword.get(multicast, :address) do
-        args = [{ :multicast_if, address } | args]
+    args = if multicast = Keyword.get(options, :multicast) do
+      args = if address = Keyword.get(multicast, :address) do
+        [{ :multicast_if, address } | args]
+      else
+        args
       end
 
-      if loop = Keyword.get(multicast, :loop) do
-        args = [{ :multicast_loop, loop } | args]
+      args = if loop = Keyword.get(multicast, :loop) do
+        [{ :multicast_loop, loop } | args]
+      else
+        args
       end
 
-      if ttl = Keyword.get(multicast, :ttl) do
-        args = [{ :multicast_ttl, ttl } | args]
+      args = if ttl = Keyword.get(multicast, :ttl) do
+        [{ :multicast_ttl, ttl } | args]
+      else
+        args
       end
+      args
+    else
+      args
     end
 
-    if membership = Keyword.get(options, :membership) do
-      args = [{ :add_membership, membership } | args]
+    args = if membership = Keyword.get(options, :membership) do
+      [{ :add_membership, membership } | args]
+    else
+      args
     end
 
     args

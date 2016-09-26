@@ -102,9 +102,10 @@ defmodule Socket.TCP do
   """
   @spec connect(String.t | :inet.ip_address, :inet.port_number, Keyword.t) :: { :ok, t } | { :error, Socket.Error.t }
   def connect(address, port, options) when address |> is_binary do
-    options = Keyword.put_new(options, :mode, :passive)
+    timeout = options[:timeout] || :infinity
+    options = Keyword.delete(options, :timeout)
 
-    :gen_tcp.connect(String.to_char_list(address), port, arguments(options), options[:timeout] || :infinity)
+    :gen_tcp.connect(String.to_char_list(address), port, arguments(options), timeout)
   end
 
   @doc """
@@ -257,73 +258,72 @@ defmodule Socket.TCP do
   """
   @spec arguments(Keyword.t) :: list
   def arguments(options) do
-    args = Socket.arguments(options)
+    options = options
+      |> Keyword.put_new(:as, :binary)
 
-    args = case Keyword.get(options, :as, :binary) do
-      :list ->
-        [:list | args]
+    %{true => local, false => global} = Enum.group_by(options, fn
+      { :as, _ }        -> true
+      { :size, _ }      -> true
+      { :packet, _ }    -> true
+      { :backlog, _ }   -> true
+      { :watermark, _ } -> true
+      { :local, _ }     -> true
+      { :verion, _ }    -> true
+      { :options, _ }   -> true
+      _                 -> false
+    end)
 
-      :binary ->
-        [:binary | args]
-    end
+    Socket.arguments(global) ++ Enum.flat_map(local, fn
+      { :as, :binary } ->
+        [:binary]
 
-    if size = Keyword.get(options, :size) do
-      args = [{ :packet_size, size } | args]
-    end
+      { :as, :list } ->
+        [:list]
 
-    if packet = Keyword.get(options, :packet) do
-      args = [{ :packet, packet } | args]
-    end
+      { :size, size } ->
+        [{ :packet_size, size }]
 
-    if backlog = Keyword.get(options, :backlog) do
-      args = [{ :backlog, backlog } | args]
-    end
+      { :packet, packet } ->
+        [{ :packet, packet }]
 
-    if watermark = Keyword.get(options, :watermark) do
-      if low = Keyword.get(watermark, :low) do
-        args = [{ :low_watermark, low } | args]
-      end
+      { :backlog, backlog } ->
+        [{ :backlog, backlog }]
 
-      if high = Keyword.get(watermark, :high) do
-        args = [{ :high_watermark, high } | args]
-      end
-    end
+      { :watermark, options } ->
+        Enum.flat_map(options, fn
+          { :low, low } ->
+            [{ :low_watermark, low }]
 
-    if local = Keyword.get(options, :local) do
-      if address = Keyword.get(local, :address) do
-        args = [{ :ip, Socket.Address.parse(address) } | args]
-      end
+          { :high, high } ->
+            [{ :high_watermark, high }]
+        end)
 
-      if port = Keyword.get(local, :port) do
-        args = [{ :port, port } | args]
-      end
+      { :local, options } ->
+        Enum.flat_map(options, fn
+          { :ip, address } ->
+            [{ :ip, Socket.Address.parse(address) }]
 
-      if fd = Keyword.get(local, :fd) do
-        args = [{ :fd, fd } | args]
-      end
-    end
+          { :port, port } ->
+            [{ :port, port }]
 
-    args = case Keyword.get(options, :version) do
-      4 ->
-        [:inet | args]
+          { :fd, fd } ->
+            [{ :fd, fd }]
+        end)
 
-      6 ->
-        [:inet6 | args]
+      { :version, 4 } ->
+        [:inet]
 
-      nil ->
-        args
-    end
+      { :version, 6 } ->
+        [:inet6]
 
-    if opts = Keyword.get(options, :options) do
-      if Enum.member?(opts, :keepalive) do
-        args = [{ :keepalive, true } | args]
-      end
+      { :options, options } ->
+        Enum.flat_map(options, fn
+          :keepalive ->
+            [{ :keepalive, true }]
 
-      if Enum.member?(opts, :nodelay) do
-        args = [{ :nodelay, true } | args]
-      end
-    end
-
-    args
+          :nodelay ->
+            [{ :nodelay, true }]
+        end)
+    end)
   end
 end

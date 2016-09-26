@@ -754,7 +754,7 @@ defmodule Socket.Web do
   def send(self, packet, options \\ [])
 
   def send(%W{socket: socket, version: 13, mask: mask}, { opcode, data }, options) when opcode != :close do
-    if Keyword.has_key?(options, :mask), do: mask = options[:mask]
+    mask = if Keyword.has_key?(options, :mask), do: options[:mask], else: mask
 
     socket |> Socket.Stream.send(
       << 1              :: 1,
@@ -764,7 +764,7 @@ defmodule Socket.Web do
   end
 
   def send(%W{socket: socket, version: 13, mask: mask}, { :fragmented, :end, data }, options) do
-    if Keyword.has_key?(options, :mask), do: mask = options[:mask]
+    mask = if Keyword.has_key?(options, :mask), do: options[:mask], else: mask
 
     socket |> Socket.Stream.send(
       << 1 :: 1,
@@ -774,7 +774,7 @@ defmodule Socket.Web do
   end
 
   def send(%W{socket: socket, version: 13, mask: mask}, { :fragmented, :continuation, data }, options) do
-    if Keyword.has_key?(options, :mask), do: mask = options[:mask]
+    mask = if Keyword.has_key?(options, :mask), do: options[:mask], else: mask
 
     socket |> Socket.Stream.send(
       << 0 :: 1,
@@ -784,7 +784,7 @@ defmodule Socket.Web do
   end
 
   def send(%W{socket: socket, version: 13, mask: mask}, { :fragmented, opcode, data }, options) do
-    if Keyword.has_key?(options, :mask), do: mask = options[:mask]
+    mask = if Keyword.has_key?(options, :mask), do: options[:mask], else: mask
 
     socket |> Socket.Stream.send(
       << 0              :: 1,
@@ -813,7 +813,7 @@ defmodule Socket.Web do
   """
   @spec ping(t)         :: :ok | { :error, error }
   @spec ping(t, binary) :: :ok | { :error, error }
-  def ping(self, cookie \\ :crypto.rand_bytes(32)) do
+  def ping(self, cookie \\ :crypto.strong_rand_bytes(32)) do
     case send(self, { :ping, cookie }) do
       :ok ->
         cookie
@@ -828,7 +828,7 @@ defmodule Socket.Web do
   """
   @spec ping!(t)         :: :ok | no_return
   @spec ping!(t, binary) :: :ok | no_return
-  def ping!(self, cookie \\ :crypto.rand_bytes(32)) do
+  def ping!(self, cookie \\ :crypto.strong_rand_bytes(32)) do
     send!(self, { :ping, cookie })
 
     cookie
@@ -873,9 +873,8 @@ defmodule Socket.Web do
   """
   @spec close(t, atom, Keyword.t) :: :ok  | {:ok, atom, binary} | { :error, error }
   def close(%W{socket: socket, version: 13, mask: mask} = self, reason, options \\ []) do
-    {reason, data} = if is_tuple(reason), do: reason, else: {reason, <<>>}
-
-    if Keyword.has_key?(options, :mask), do: mask = options[:mask]
+    { reason, data } = if is_tuple(reason), do: reason, else: { reason, <<>> }
+    mask             = if Keyword.has_key?(options, :mask), do: options[:mask], else: mask
 
     socket |> Socket.Stream.send(
       << 1              :: 1,

@@ -175,7 +175,9 @@ defimpl Socket.Stream.Protocol, for: Port do
   end
 
   def recv(self, length, options) do
-    case :gen_tcp.recv(self, length, options[:timeout] || :infinity) do
+    timeout = options[:timeout] || :infinity
+
+    case :gen_tcp.recv(self, length, timeout) do
       { :ok, _ } = ok ->
         ok
 
@@ -250,7 +252,9 @@ defimpl Socket.Stream.Protocol, for: Tuple do
   end
 
   def recv(self, length, options) when self |> Record.is_record(:sslsocket) do
-    case :ssl.recv(self, length, options[:timeout] || :infinity) do
+    timeout = options[:timeout] || :infinity
+
+    case :ssl.recv(self, length, timeout) do
       { :ok, _ } = ok ->
         ok
 

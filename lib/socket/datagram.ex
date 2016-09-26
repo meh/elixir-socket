@@ -50,8 +50,10 @@ end
 
 defimpl Socket.Datagram.Protocol, for: Port do
   def send(self, data, { address, port }) do
-    if address |> is_binary do
-      address = address |> String.to_char_list
+    address = if address |> is_binary do
+      address |> String.to_char_list
+    else
+      address
     end
 
     :gen_udp.send(self, address, port, data)
@@ -70,7 +72,9 @@ defimpl Socket.Datagram.Protocol, for: Port do
   end
 
   def recv(self, length, options) do
-    case :gen_udp.recv(self, length, options[:timeout] || :infinity) do
+    timeout = options[:timeout] || :infinity
+
+    case :gen_udp.recv(self, length, timeout) do
       { :ok, { address, port, data } } ->
         { :ok, { data, { address, port } } }
 

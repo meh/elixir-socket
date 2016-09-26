@@ -75,7 +75,7 @@ defmodule Socket.Address do
         addresses
 
       { :error, code } ->
-        raise PosixError, code: code
+        raise Socket.Error, reason: code
     end
   end
 

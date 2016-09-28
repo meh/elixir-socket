@@ -132,7 +132,7 @@ defmodule Socket.UDP do
     options = options
       |> Keyword.put_new(:as, :binary)
 
-    %{true => local, false => global} = Enum.group_by(options, fn
+    options = Enum.group_by(options, fn
       { :as, _ }         -> true
       { :local, _ }      -> true
       { :version, _ }    -> true
@@ -141,6 +141,11 @@ defmodule Socket.UDP do
       { :membership, _ } -> true
       _                  -> false
     end)
+
+    { local, global } = {
+      Map.get(options, true, []),
+      Map.get(options, false, [])
+    }
 
     Socket.arguments(global) ++ Enum.flat_map(local, fn
       { :as, :binary } ->

@@ -261,7 +261,7 @@ defmodule Socket.TCP do
     options = options
       |> Keyword.put_new(:as, :binary)
 
-    %{true => local, false => global} = Enum.group_by(options, fn
+    options = Enum.group_by(options, fn
       { :as, _ }        -> true
       { :size, _ }      -> true
       { :packet, _ }    -> true
@@ -272,6 +272,11 @@ defmodule Socket.TCP do
       { :options, _ }   -> true
       _                 -> false
     end)
+
+    { local, global } = {
+      Map.get(options, true, []),
+      Map.get(options, false, [])
+    }
 
     Socket.arguments(global) ++ Enum.flat_map(local, fn
       { :as, :binary } ->

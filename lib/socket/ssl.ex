@@ -340,7 +340,7 @@ defmodule Socket.SSL do
   """
   @spec arguments(Keyword.t) :: list
   def arguments(options) do
-    %{true => local, false => global} = Enum.group_by(options, fn
+    options = Enum.group_by(options, fn
       { :cert, _ }                 -> true
       { :key, _ }                  -> true
       { :authorities, _ }          -> true
@@ -356,6 +356,11 @@ defmodule Socket.SSL do
       { :advertised_protocols, _ } -> true
       _                            -> false
     end)
+
+    { local, global } = {
+      Map.get(options, true, []),
+      Map.get(options, false, [])
+    }
 
     Socket.TCP.arguments(global) ++ Enum.flat_map(local, fn
       { :cert, [path: path] } ->

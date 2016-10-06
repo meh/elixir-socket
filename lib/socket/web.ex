@@ -837,7 +837,7 @@ defmodule Socket.Web do
   @doc """
   Send a pong with the given (and received) ping cookie.
   """
-  @spec pong(binary, t) :: :ok | { :error, error }
+  @spec pong(t, binary) :: :ok | { :error, error }
   def pong(self, cookie) do
     send(self, { :pong, cookie })
   end

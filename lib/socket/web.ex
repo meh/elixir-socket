@@ -846,7 +846,7 @@ defmodule Socket.Web do
   Send a pong with the given (and received) ping cookie, raising if an error
   occurs.
   """
-  @spec pong!(binary, t) :: :ok | no_return
+  @spec pong!(t, binary) :: :ok | no_return
   def pong!(self, cookie) do
     send!(self, { :pong, cookie })
   end

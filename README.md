@@ -3,6 +3,22 @@ Elixir sockets made decent
 This library wraps `gen_tcp`, `gen_udp` and `gen_sctp`, `ssl` and implements
 websockets and socks.
 
+Installation
+--------
+In your `mix.exs` file
+
+```
+defp deps do
+  [
+    # ...
+    {:socket, "~> 0.3"},
+    # ...
+  ]
+end
+```
+
+Then run `mix deps.get` to install
+
 Examples
 --------
 

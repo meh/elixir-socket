@@ -32,9 +32,9 @@ defmodule AddressTest do
   end
 
   test "Get ip address for host" do
-    {ret, addresses} = Addr.for("localhost", :inet)
+    {ret, _addresses} = Addr.for("localhost", :inet)
     assert ret == :ok
-    {ret, addresses} = Addr.for("baidu.com", :inet)
+    {ret, _addresses} = Addr.for("baidu.com", :inet)
     assert ret == :ok
   end
 end

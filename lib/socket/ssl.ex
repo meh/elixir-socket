@@ -106,11 +106,16 @@ defmodule Socket.SSL do
   end
 
   def connect(wrap, options) when options |> is_list do
-    unless wrap |> is_port do
-      wrap = wrap.to_port
+    wrap = unless wrap |> is_port do
+      wrap.to_port
+    else
+      wrap
     end
 
-    :ssl.connect(wrap, options, options[:timeout] || :infinity)
+    timeout = options[:timeout] || :infinity
+    options = Keyword.delete(options, :timeout)
+
+    :ssl.connect(wrap, options, timeout)
   end
 
   def connect(address, port) when port |> is_integer do
@@ -130,13 +135,16 @@ defmodule Socket.SSL do
   """
   @spec connect(Socket.Address.t, :inet.port_number, Keyword.t) :: { :ok, t } | { :error, term }
   def connect(address, port, options) do
-    if address |> is_binary do
-      address = String.to_char_list(address)
+    address = if address |> is_binary do
+      String.to_char_list(address)
+    else
+      address
     end
 
-    options = Keyword.put_new(options, :mode, :passive)
+    timeout = options[:timeout] || :infinity
+    options = Keyword.delete(options, :timeout)
 
-    :ssl.connect(address, port, arguments(options), options[:timeout] || :infinity)
+    :ssl.connect(address, port, arguments(options), timeout)
   end
 
   @doc """
@@ -222,9 +230,9 @@ defmodule Socket.SSL do
   """
   @spec accept(Socket.t, Keyword.t) :: { :ok, t } | { :error, term }
   def accept(sock, options) when sock |> Record.is_record(:sslsocket) do
-    options = Keyword.put_new(options, :mode, :passive)
+    timeout = options[:timeout] || :infinity
 
-    case :ssl.transport_accept(sock, options[:timeout] || :infinity) do
+    case :ssl.transport_accept(sock, timeout) do
       { :ok, sock } ->
         result = if options[:mode] == :active do
           :ssl.setopts(sock, [{ :active, true }])
@@ -233,7 +241,7 @@ defmodule Socket.SSL do
         end
 
         if result == :ok do
-          result = sock |> handshake(timeout: options[:timeout] || :infinity)
+          result = sock |> handshake(timeout: timeout)
 
           if result == :ok do
             { :ok, sock }
@@ -250,7 +258,10 @@ defmodule Socket.SSL do
   end
 
   def accept(wrap, options) when wrap |> is_port do
-    :ssl.ssl_accept(wrap, arguments(options), options[:timeout] || :infinity)
+    timeout = options[:timeout] || :infinity
+    options = Keyword.delete(options, :timeout)
+
+    :ssl.ssl_accept(wrap, arguments(options), timeout)
   end
 
   @doc """
@@ -268,7 +279,9 @@ defmodule Socket.SSL do
   @spec handshake(t)            :: :ok | { :error, term }
   @spec handshake(t, Keyword.t) :: :ok | { :error, term }
   def handshake(sock, options \\ []) when sock |> Record.is_record(:sslsocket) do
-    :ssl.ssl_accept(sock, options[:timeout] || :infinity)
+    timeout = options[:timeout] || :infinity
+
+    :ssl.ssl_accept(sock, timeout)
   end
 
   @doc """
@@ -327,112 +340,95 @@ defmodule Socket.SSL do
   """
   @spec arguments(Keyword.t) :: list
   def arguments(options) do
-    args = Socket.TCP.arguments(options)
+    options = Enum.group_by(options, fn
+      { :cert, _ }                 -> true
+      { :key, _ }                  -> true
+      { :authorities, _ }          -> true
+      { :dh, _ }                   -> true
+      { :verify, _ }               -> true
+      { :password, _ }             -> true
+      { :renegotiation, _ }        -> true
+      { :ciphers, _ }              -> true
+      { :depth, _ }                -> true
+      { :versions, _ }             -> true
+      { :ibernate, _ }             -> true
+      { :reuse, _ }                -> true
+      { :advertised_protocols, _ } -> true
+      _                            -> false
+    end)
 
-    args = case Keyword.get(options, :cert) do
-      [path: path] ->
-        [{ :certfile, path } | args]
+    { local, global } = {
+      Map.get(options, true, []),
+      Map.get(options, false, [])
+    }
 
-      nil ->
-        args
+    Socket.TCP.arguments(global) ++ Enum.flat_map(local, fn
+      { :cert, [path: path] } ->
+        [{ :certfile, path }]
 
-      content ->
-        [{ :cert, content } | args]
-    end
+      { :cert, cert } ->
+        [{ :cert, cert }]
 
-    args = case Keyword.get(options, :key) do
-      [path: path] ->
-        [{ :keyfile, path } | args]
+      { :key, [path: path] } ->
+        [{ :keyfile, path }]
 
-      [rsa: content] ->
-        [{ :key, { :RSAPrivateKey, content } } | args]
+      { :key, [rsa: key] } ->
+        [{ :key, { :RSAPrivateKey, key } }]
 
-      [dsa: content] ->
-        [{ :key, { :DSAPrivateKey, content } } | args]
+      { :key, [dsa: key] } ->
+        [{ :key, { :DSAPrivateKey, key } }]
 
-      nil ->
-        args
+      { :key, key } ->
+        [{ :key, { :PrivateKeyInfo, key } }]
 
-      content ->
-        [{ :key, { :PrivateKeyInfo, content } } | args]
-    end
+      { :authorities, [path: path] } ->
+        [{ :cacertfile, path }]
 
-    args = case Keyword.get(options, :authorities) do
-      [path: path] ->
-        [{ :cacertfile, path } | args]
+      { :authorities, ca } ->
+        [{ :cacert, ca }]
 
-      nil ->
-        args
+      { :dh, [path: path] } ->
+        [{ :dhfile, path }]
 
-      content ->
-        [{ :cacert, content } | args]
-    end
+      { :dh, dh } ->
+        [{ :dh, dh }]
 
-    args = case Keyword.get(options, :dh) do
-      [path: path] ->
-        [{ :dhfile, path } | args]
+      { :verify, false } ->
+        [{ :verify, :verify_none }]
 
-      nil ->
-        args
+      { :verify, [function: fun] } ->
+        [{ :verify_fun, { fun, nil } }]
 
-      content ->
-        [{ :dh, content } | args]
-    end
+      { :verify, [function: fun, data: data] } ->
+        [{ :verify_fun, { fun, data } }]
 
-    args = case Keyword.get(options, :verify) do
-      false ->
-        [{ :verify, :verify_none } | args]
+      { :password, password } ->
+        [{ :password, password }]
 
-      [function: fun] ->
-        [{ :verify_fun, { fun, nil } } | args]
+      { :renegotiation, :secure } ->
+        [{ :secure_renegotiate, true }]
 
-      [function: fun, data: data] ->
-        [{ :verify_fun, { fun, data } } | args]
+      { :ciphers, ciphers } ->
+        [{ :ciphers, ciphers }]
 
-      nil ->
-        args
-    end
+      { :depth, depth } ->
+        [{ :depth, depth }]
 
-    if password = Keyword.get(options, :password) do
-      args = [{ :password, password } | args]
-    end
+      { :versions, versions } ->
+        [{ :versions, versions }]
 
-    if Keyword.get(options, :renegotiation) == :secure do
-      args = [{ :secure_renegotiate, true } | args]
-    end
+      { :hibernate, hibernate } ->
+        [{ :hibernate_after, hibernate }]
 
-    if ciphers = Keyword.get(options, :ciphers) do
-      args = [{ :ciphers, ciphers } | args]
-    end
+      { :reuse, fun } when fun |> is_function ->
+        [{ :reuse_session, fun }]
 
-    if depth = Keyword.get(options, :depth) do
-      args = [{ :depth, depth } | args]
-    end
+      { :reuse, true } ->
+        [{ :reuse_sessions, true }]
 
-    if versions = Keyword.get(options, :versions) do
-      args = [{ :versions, versions } | args]
-    end
-
-    if hibernate = Keyword.get(options, :hibernate) do
-      args = [{ :hibernate_after, hibernate } | args]
-    end
-
-    args = case Keyword.get(options, :reuse) do
-      fun when fun |> is_function ->
-        [{ :reuse_session, fun } | args]
-
-      true ->
-        [{ :reuse_sessions, true } | args]
-
-      nil ->
-        args
-    end
-
-    if protocols = Keyword.get(options, :advertised_protocols) do
-      args = [{ :next_protocols_advertised, protocols } | args]
-    end
-
-    args
+      { :advertised_protocols, protocols } ->
+        [{ :next_protocols_advertised, protocols }]
+    end)
   end
 
   @doc """

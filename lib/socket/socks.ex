@@ -37,10 +37,12 @@ defmodule Socket.SOCKS do
   defbang connect(to, through, options)
 
   defp pre(address, port, options) do
-    if options[:mode] == :active || options[:mode] == :once do
-      options = options
+    options = if options[:mode] == :active || options[:mode] == :once do
+      options
         |> Keyword.put(:mode, :passive)
         |> Keyword.put(:automatic, false)
+    else
+      options
     end
 
     Socket.TCP.connect(address, port, options)

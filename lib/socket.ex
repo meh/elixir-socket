@@ -164,64 +164,58 @@ defmodule Socket do
 
   @doc false
   def arguments(options) do
-    args = []
+    options = options
+      |> Keyword.put_new(:mode, :passive)
 
-    args = case Keyword.get(options, :mode, :passive) do
-      :active ->
-        [{ :active, true } | args]
+    Enum.flat_map(options, fn
+      { :mode, :active } ->
+        [{ :active, true }]
 
-      :once ->
-        [{ :active, :once } | args]
+      { :mode, :once } ->
+        [{ :active, :once }]
 
-      :passive ->
-        [{ :active, false } | args]
-    end
+      { :mode, :passive } ->
+        [{ :active, false }]
 
-    if Keyword.has_key?(options, :route) do
-      args = [{ :dontroute, !Keyword.get(options, :route) } | args]
-    end
+      { :route, true } ->
+        [{ :dontroute, false }]
 
-    if Keyword.get(options, :reuseaddr) do
-      args = [{ :reuseaddr, true } | args]
-    end
+      { :route, false } ->
+        [{ :dontroute, true }]
 
-    if linger = Keyword.get(options, :linger) do
-      args = [{ :linger, { true, linger } } | args]
-    end
+      { :reuseaddr, true } ->
+        [{ :reuseaddr, true }]
 
-    if priority = Keyword.get(options, :priority) do
-      args = [{ :priority, priority } | args]
-    end
+      { :reuseaddr, false } ->
+        []
 
-    if tos = Keyword.get(options, :tos) do
-      args = [{ :tos, tos } | args]
-    end
+      { :linger, value } ->
+        [{ :linger, { true, value } }]
 
-    if send = Keyword.get(options, :send) do
-      case Keyword.get(send, :timeout) do
-        { timeout, :close } ->
-          args = [{ :send_timeout, timeout }, { :send_timeout_close, true } | args]
+      { :priority, value } ->
+        [{ :priority, value }]
 
-        timeout when timeout |> is_integer ->
-          args = [{ :send_timeout, timeout } | args]
-      end
+      { :tos, value } ->
+        [{ :tos, value }]
 
-      if delay = Keyword.get(send, :delay) do
-        args = [{ :delay_send, delay } | args]
-      end
+      { :send, options } ->
+        Enum.flat_map(options, fn
+          { :timeout, { timeout, :close } } ->
+            [{ :send_timeout, timeout }, { :send_timeout_close, true }]
 
-      if buffer = Keyword.get(send, :buffer) do
-        args = [{ :sndbuf, buffer } | args]
-      end
-    end
+          { :timeout, timeout } when timeout |> is_integer ->
+            [{ :send_timeout, timeout }]
 
-    if recv = Keyword.get(options, :recv) do
-      if buffer = Keyword.get(recv, :buffer) do
-        args = [{ :recbuf, buffer } | args]
-      end
-    end
+          { :delay, delay } ->
+            [{ :delay_send, delay }]
 
-    args
+          { :buffer, buffer } ->
+            [{ :sndbuf, buffer }]
+
+          { :recv, buffer } ->
+            [{ :recbuf, buffer }]
+        end)
+    end)
   end
 
   use Socket.Helpers

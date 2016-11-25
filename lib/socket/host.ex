@@ -49,7 +49,7 @@ defmodule Socket.Host do
         convert(host)
 
       { :error, code } ->
-        raise PosixError, code: code
+        raise Socket.Error, reason: code
     end
   end
 
@@ -91,7 +91,7 @@ defmodule Socket.Host do
         convert(host)
 
       { :error, code } ->
-        raise PosixError, code: code
+        raise Socket.Error, reason: code
     end
   end
 
@@ -105,7 +105,7 @@ defmodule Socket.Host do
         convert(host)
 
       { :error, code } ->
-        raise PosixError, code: code
+        raise Socket.Error, reason: code
     end
   end
 
@@ -138,7 +138,7 @@ defmodule Socket.Host do
         ifs
 
       { :error, code } ->
-        raise PosixError, code: code
+        raise Socket.Error, reason: code
     end
   end
 end

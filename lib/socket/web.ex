@@ -163,6 +163,9 @@ defmodule Socket.Web do
 
       e in [RuntimeError] ->
         { :error, e.message }
+        
+      e in [Socket.Error] ->
+        { :error, e.message }
 
       e in [Socket.TCP.Error, Socket.SSL.Error] ->
         { :error, e.code }
@@ -246,8 +249,8 @@ defmodule Socket.Web do
     { :http_response, _, 101, _ } = client |> Socket.Stream.recv!(options)
     headers                       = headers(%{}, client, options)
 
-    if String.downcase(headers["upgrade"]) != "websocket" or
-       String.downcase(headers["connection"]) != "upgrade" do
+    if String.downcase(headers["upgrade"] || "") != "websocket" or
+       String.downcase(headers["connection"] || "") != "upgrade" do
       client |> Socket.close
 
       raise RuntimeError, message: "malformed upgrade response"
@@ -754,7 +757,7 @@ defmodule Socket.Web do
   def send(self, packet, options \\ [])
 
   def send(%W{socket: socket, version: 13, mask: mask}, { opcode, data }, options) when opcode != :close do
-    if Keyword.has_key?(options, :mask), do: mask = options[:mask]
+    mask = if Keyword.has_key?(options, :mask), do: options[:mask], else: mask
 
     socket |> Socket.Stream.send(
       << 1              :: 1,
@@ -764,7 +767,7 @@ defmodule Socket.Web do
   end
 
   def send(%W{socket: socket, version: 13, mask: mask}, { :fragmented, :end, data }, options) do
-    if Keyword.has_key?(options, :mask), do: mask = options[:mask]
+    mask = if Keyword.has_key?(options, :mask), do: options[:mask], else: mask
 
     socket |> Socket.Stream.send(
       << 1 :: 1,
@@ -774,7 +777,7 @@ defmodule Socket.Web do
   end
 
   def send(%W{socket: socket, version: 13, mask: mask}, { :fragmented, :continuation, data }, options) do
-    if Keyword.has_key?(options, :mask), do: mask = options[:mask]
+    mask = if Keyword.has_key?(options, :mask), do: options[:mask], else: mask
 
     socket |> Socket.Stream.send(
       << 0 :: 1,
@@ -784,7 +787,7 @@ defmodule Socket.Web do
   end
 
   def send(%W{socket: socket, version: 13, mask: mask}, { :fragmented, opcode, data }, options) do
-    if Keyword.has_key?(options, :mask), do: mask = options[:mask]
+    mask = if Keyword.has_key?(options, :mask), do: options[:mask], else: mask
 
     socket |> Socket.Stream.send(
       << 0              :: 1,
@@ -813,7 +816,7 @@ defmodule Socket.Web do
   """
   @spec ping(t)         :: :ok | { :error, error }
   @spec ping(t, binary) :: :ok | { :error, error }
-  def ping(self, cookie \\ :crypto.rand_bytes(32)) do
+  def ping(self, cookie \\ :crypto.strong_rand_bytes(32)) do
     case send(self, { :ping, cookie }) do
       :ok ->
         cookie
@@ -828,7 +831,7 @@ defmodule Socket.Web do
   """
   @spec ping!(t)         :: :ok | no_return
   @spec ping!(t, binary) :: :ok | no_return
-  def ping!(self, cookie \\ :crypto.rand_bytes(32)) do
+  def ping!(self, cookie \\ :crypto.strong_rand_bytes(32)) do
     send!(self, { :ping, cookie })
 
     cookie
@@ -837,7 +840,7 @@ defmodule Socket.Web do
   @doc """
   Send a pong with the given (and received) ping cookie.
   """
-  @spec pong(binary, t) :: :ok | { :error, error }
+  @spec pong(t, binary) :: :ok | { :error, error }
   def pong(self, cookie) do
     send(self, { :pong, cookie })
   end
@@ -846,7 +849,7 @@ defmodule Socket.Web do
   Send a pong with the given (and received) ping cookie, raising if an error
   occurs.
   """
-  @spec pong!(binary, t) :: :ok | no_return
+  @spec pong!(t, binary) :: :ok | no_return
   def pong!(self, cookie) do
     send!(self, { :pong, cookie })
   end
@@ -873,9 +876,8 @@ defmodule Socket.Web do
   """
   @spec close(t, atom, Keyword.t) :: :ok  | {:ok, atom, binary} | { :error, error }
   def close(%W{socket: socket, version: 13, mask: mask} = self, reason, options \\ []) do
-    {reason, data} = if is_tuple(reason), do: reason, else: {reason, <<>>}
-
-    if Keyword.has_key?(options, :mask), do: mask = options[:mask]
+    { reason, data } = if is_tuple(reason), do: reason, else: { reason, <<>> }
+    mask             = if Keyword.has_key?(options, :mask), do: options[:mask], else: mask
 
     socket |> Socket.Stream.send(
       << 1              :: 1,

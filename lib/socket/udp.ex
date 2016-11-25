@@ -129,59 +129,63 @@ defmodule Socket.UDP do
   """
   @spec arguments(Keyword.t) :: list
   def arguments(options) do
-    args = Socket.arguments(options)
+    options = options
+      |> Keyword.put_new(:as, :binary)
 
-    args = case Keyword.get(options, :as, :binary) do
-      :list ->
-        [:list | args]
+    options = Enum.group_by(options, fn
+      { :as, _ }         -> true
+      { :local, _ }      -> true
+      { :version, _ }    -> true
+      { :broadcast, _ }  -> true
+      { :multicast, _ }  -> true
+      { :membership, _ } -> true
+      _                  -> false
+    end)
 
-      :binary ->
-        [:binary | args]
-    end
+    { local, global } = {
+      Map.get(options, true, []),
+      Map.get(options, false, [])
+    }
 
-    if local = Keyword.get(options, :local) do
-      if address = Keyword.get(local, :address) do
-        args = [{ :ip, Socket.Address.parse(address) } | args]
-      end
+    Socket.arguments(global) ++ Enum.flat_map(local, fn
+      { :as, :binary } ->
+        [:binary]
 
-      if fd = Keyword.get(local, :fd) do
-        args = [{ :fd, fd } | args]
-      end
-    end
+      { :as, :list } ->
+        [:list]
 
-    args = case Keyword.get(options, :version) do
-      4 ->
-        [:inet | args]
+      { :local, options } ->
+        Enum.flat_map(options, fn
+          { :address, address } ->
+            [{ :ip, Socket.Address.parse(address) }]
 
-      6 ->
-        [:inet6 | args]
+          { :fd, fd } ->
+            [{ :fd, fd }]
+        end)
 
-      nil ->
-        args
-    end
+      { :version, 4 } ->
+        [:inet]
 
-    if Keyword.has_key?(options, :broadcast) do
-      args = [{ :broadcast, Keyword.get(options, :broadcast) } | args]
-    end
+      { :version, 6 } ->
+        [:inet6]
 
-    if multicast = Keyword.get(options, :multicast) do
-      if address = Keyword.get(multicast, :address) do
-        args = [{ :multicast_if, address } | args]
-      end
+      { :broadcast, broadcast } ->
+        [{ :broadcast, broadcast }]
 
-      if loop = Keyword.get(multicast, :loop) do
-        args = [{ :multicast_loop, loop } | args]
-      end
+      { :multicast, options } ->
+        Enum.flat_map(options, fn
+          { :address, address } ->
+            [{ :multicast_if, Socket.Address.parse(address) }]
 
-      if ttl = Keyword.get(multicast, :ttl) do
-        args = [{ :multicast_ttl, ttl } | args]
-      end
-    end
+          { :loop, loop } ->
+            [{ :multicast_loop, loop }]
 
-    if membership = Keyword.get(options, :membership) do
-      args = [{ :add_membership, membership } | args]
-    end
+          { :ttl, ttl } ->
+            [{ :multicast_ttl, ttl }]
+        end)
 
-    args
+      { :membership, membership } ->
+        [{ :add_membership, membership }]
+    end)
   end
 end

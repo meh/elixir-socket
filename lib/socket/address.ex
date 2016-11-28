@@ -12,7 +12,8 @@ defmodule Socket.Address do
   @type t :: String.t | char_list | :inet.ip_address
 
   @doc """
-  Parse a string to an ip address tuple.
+  Parse a strict ip address string to an ip address tuple.
+  return `nil` if ip address is invalid.
   """
   @spec parse(t) :: :inet.ip_address
   def parse(text) when text |> is_binary do
@@ -20,7 +21,7 @@ defmodule Socket.Address do
   end
 
   def parse(text) when text |> is_list do
-    case :inet.parse_address(text) do
+    case :inet.parse_strict_address(text) do
       { :ok, ip } ->
         ip
 

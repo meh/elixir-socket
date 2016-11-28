@@ -6,12 +6,14 @@
 #
 #  0. You just DO WHAT THE FUCK YOU WANT TO.
 
+# Socket {{{
 defmodule Socket do
   @type t :: Socket.Protocol.t
 
   @default_port_ws  80
   @default_port_wss 443
 
+  # Error {{{
   defmodule Error do
     defexception message: nil
 
@@ -30,7 +32,9 @@ defmodule Socket do
       %Error{message: message}
     end
   end
+  # }}}
 
+  # connect {{{
   @doc ~S"""
   Create a socket connecting to somewhere using an URI.
 
@@ -94,7 +98,9 @@ defmodule Socket do
   def connect!(%URI{scheme: "wss", host: host, port: port, path: path}) do
     Socket.Web.connect!(host, port || @default_port_wss, path: path, secure: true)
   end
+  # }}}
 
+  # listen {{{
   @doc """
   Create a socket listening somewhere using an URI.
 
@@ -161,7 +167,9 @@ defmodule Socket do
   def listen!(%URI{scheme: "wss", host: host, port: port}) do
     Socket.Web.listen!(port || @default_port_wss, secure: true, local: [address: if(host == "*", do: "0.0.0.0", else: host)])
   end
+  # }}}
 
+  # arguments {{{
   @doc false
   def arguments(options) do
     options = options
@@ -217,6 +225,7 @@ defmodule Socket do
         end)
     end)
   end
+  # }}}
 
   use Socket.Helpers
 
@@ -256,7 +265,9 @@ defmodule Socket do
   defbang close(self), to: Socket.Protocol
 
 end
+#}}}
 
+# Socket.Protocol {{{
 defprotocol Socket.Protocol do
   @doc """
   Check the two sockets are the same.
@@ -443,3 +454,5 @@ defimpl Socket.Protocol, for: Tuple do
     :ssl.close(self)
   end
 end
+# }}}
+

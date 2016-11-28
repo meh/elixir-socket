@@ -6,6 +6,7 @@
 #
 #  0. You just DO WHAT THE FUCK YOU WANT TO.
 
+# Socket.TCP {{{
 defmodule Socket.TCP do
   @moduledoc """
   This module wraps a passive TCP socket using `gen_tcp`.
@@ -47,6 +48,7 @@ defmodule Socket.TCP do
 
   @opaque t :: port
 
+  # error {{{
   @doc """
   Return a proper error string for the given code or nil if it can't be
   converted.
@@ -61,7 +63,9 @@ defmodule Socket.TCP do
         message |> to_string
     end
   end
+  # }}}
 
+  # connect {{{
   @doc """
   Create a TCP socket connecting to the given host and port tuple.
   """
@@ -114,7 +118,9 @@ defmodule Socket.TCP do
   """
   @spec connect!(String.t | :inet.ip_address, :inet.port_number, Keyword.t) :: t | no_return
   defbang connect(address, port, options)
+  # }}}
 
+  # listen {{{
   @doc """
   Create a TCP socket listening on an OS chosen port, use `local` to know the
   port it was bound on.
@@ -168,7 +174,9 @@ defmodule Socket.TCP do
   """
   @spec listen!(:inet.port_number, Keyword.t) :: t | no_return
   defbang listen(port, options)
+  # }}}
 
+  # accept {{{
   @doc """
   Accept a new client from a listening socket, optionally passing options.
   """
@@ -206,7 +214,9 @@ defmodule Socket.TCP do
   @spec accept!(t, Keyword.t) :: t | no_return
   defbang accept(self)
   defbang accept(self, options)
+  # }}}
 
+  # process {{{
   @doc """
   Set the process which will receive the messages.
   """
@@ -234,7 +244,9 @@ defmodule Socket.TCP do
         raise Socket.Error, reason: code
     end
   end
+  # }}}
 
+  # options {{{
   @doc """
   Set options of the socket.
   """
@@ -252,7 +264,9 @@ defmodule Socket.TCP do
   """
   @spec options!(t | Socket.SSL.t | port, Keyword.t) :: :ok | no_return
   defbang options(socket, options)
+  # }}}
 
+  # arguments {{{
   @doc """
   Convert TCP options to `:inet.setopts` compatible arguments.
   """
@@ -331,4 +345,7 @@ defmodule Socket.TCP do
         end)
     end)
   end
+  # }}}
 end
+# }}}
+

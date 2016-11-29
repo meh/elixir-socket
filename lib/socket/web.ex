@@ -217,20 +217,22 @@ defmodule Socket.Web do
   """
   @spec connect!(Socket.Address.t, :inet.port_number, Keyword.t) :: t | no_return
   def connect!(address, port, options) do
-    mod = if options[:secure] do
+    { local, global } = arguments(options)
+
+    mod = if local[:secure] do
       Socket.SSL
     else
       Socket.TCP
     end
 
-    path       = options[:path] || "/"
-    origin     = options[:origin]
-    protocols  = options[:protocol]
-    extensions = options[:extensions]
-    key        = :base64.encode(options[:key] || "fork the dongles")
-    headers    = Enum.map(options[:headers] || %{}, fn({ k, v }) -> ["#{k}: #{v}", "\r\n"] end)
+    path       = local[:path] || "/"
+    origin     = local[:origin]
+    protocols  = local[:protocol]
+    extensions = local[:extensions]
+    key        = :base64.encode(local[:key] || "fork the dongles")
+    headers    = Enum.map(local[:headers] || %{}, fn({ k, v }) -> ["#{k}: #{v}", "\r\n"] end)
 
-    client = mod.connect!(address, port)
+    client = mod.connect!(address, port, global)
     client |> Socket.packet!(:raw)
     client |> Socket.Stream.send!([
       "GET #{path} HTTP/1.1", "\r\n",
@@ -246,8 +248,8 @@ defmodule Socket.Web do
       "\r\n"])
 
     client |> Socket.packet(:http_bin)
-    { :http_response, _, 101, _ } = client |> Socket.Stream.recv!(options)
-    headers                       = headers(%{}, client, options)
+    { :http_response, _, 101, _ } = client |> Socket.Stream.recv!(global)
+    headers                       = headers(%{}, client, local)
 
     if String.downcase(headers["upgrade"] || "") != "websocket" or
        String.downcase(headers["connection"] || "") != "upgrade" do
@@ -309,13 +311,15 @@ defmodule Socket.Web do
   """
   @spec listen(:inet.port_number, Keyword.t) :: { :ok, t } | { :error, error }
   def listen(port, options) do
-    mod = if options[:secure] do
+    { local, global } = arguments(options)
+
+    mod = if local[:secure] do
       Socket.SSL
     else
       Socket.TCP
     end
 
-    case mod.listen(port, options) do
+    case mod.listen(port, global) do
       { :ok, socket } ->
         { :ok, %W{socket: socket} }
 
@@ -361,13 +365,15 @@ defmodule Socket.Web do
   """
   @spec listen!(:inet.port_number, Keyword.t) :: t | no_return
   def listen!(port, options) do
-    mod = if options[:secure] do
+    { local, global } = arguments(options)
+
+    mod = if local[:secure] do
       Socket.SSL
     else
       Socket.TCP
     end
 
-    %W{socket: mod.listen!(port, options)}
+    %W{socket: mod.listen!(port, global)}
   end
 
   @doc """
@@ -408,15 +414,17 @@ defmodule Socket.Web do
   def accept!(socket, options \\ [])
 
   def accept!(%W{socket: socket, key: nil}, options) do
-    client = socket |> Socket.accept!(options)
+    { local, global } = arguments(options)
+
+    client = socket |> Socket.accept!(global)
     client |> Socket.packet!(:http_bin)
 
-    path = case client |> Socket.Stream.recv!(options) do
+    path = case client |> Socket.Stream.recv!(global) do
       { :http_request, :GET, { :abs_path, path }, _ } ->
         path
     end
 
-    headers = headers(%{}, client, options)
+    headers = headers(%{}, client, local)
 
     if headers["upgrade"] != "websocket" and headers["connection"] != "Upgrade" do
       client |> Socket.close
@@ -451,8 +459,10 @@ defmodule Socket.Web do
   end
 
   def accept!(%W{socket: socket, key: key}, options) do
-    extensions = options[:extension]
-    protocol   = options[:protocol]
+    { local, _ } = arguments(options)
+
+    extensions = local[:extensions]
+    protocol   = local[:protocol]
 
     socket |> Socket.packet!(:raw)
     socket |> Socket.Stream.send!([
@@ -464,6 +474,25 @@ defmodule Socket.Web do
       if(extensions, do: ["Sec-WebSocket-Extensions: ", Enum.join(extensions, ", "), "\r\n"], else: []),
       if(protocol, do: ["Sec-WebSocket-Protocol: ", protocol, "\r\n"], else: []),
       "\r\n" ])
+  end
+
+  @doc """
+  Extract websocket specific options from the rest.
+  """
+  @spec arguments(Keyword.t) :: { Keyword.t, Keyword.t }
+  def arguments(options) do
+    options = Enum.group_by(options, fn
+      { :secure, _ }                      -> true
+      { :path, _ }                        -> true
+      { :origin, _ }                      -> true
+      { :protocol, _ }                    -> true
+      { :extensions, _ }                  -> true
+      { :key, key } when key |> is_binary -> true
+      { :headers, _ }                     -> true
+      _                                   -> false
+    end)
+
+    { Map.get(options, true, []), Map.get(options, false, []) }
   end
 
   @doc """

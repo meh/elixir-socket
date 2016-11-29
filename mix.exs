@@ -15,7 +15,7 @@ defmodule Socket.Mixfile do
   end
 
   defp deps do
-    [ { :ex_doc, "~> 0.11", only: [:dev] } ]
+    [ { :ex_doc, "~> 0.14", only: [:dev] } ]
   end
 
   defp package do

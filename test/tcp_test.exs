@@ -29,7 +29,7 @@ defmodule TcpTest do
     assert data == "test"
     assert client |> Socket.Stream.shutdown(:write) == :ok
     {result, _} = client |> Socket.Stream.send("test4")
-    assert result = :error
+    assert result == :error
     {result, data} = client2 |> Socket.Stream.recv(1)
     assert result == :ok
     assert data == "3"

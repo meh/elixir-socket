@@ -163,7 +163,7 @@ defmodule Socket.Web do
 
       e in [RuntimeError] ->
         { :error, e.message }
-        
+
       e in [Socket.Error] ->
         { :error, e.message }
 
@@ -292,7 +292,7 @@ defmodule Socket.Web do
   end
 
   def listen(options) do
-    if listen[:secure] do
+    if options[:secure] do
       listen(443, options)
     else
       listen(80, options)
@@ -346,7 +346,7 @@ defmodule Socket.Web do
   end
 
   def listen!(options) do
-    if listen[:secure] do
+    if options[:secure] do
       listen!(443, options)
     else
       listen!(80, options)

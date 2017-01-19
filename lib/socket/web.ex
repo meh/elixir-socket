@@ -917,7 +917,7 @@ defmodule Socket.Web do
            << close_code(reason) :: 16, data :: binary >>) :: binary >>)
 
     unless options[:wait] == false do
-      do_close(self, recv(self, options), Dict.get(options, :reason?, false), options)
+      do_close(self, recv(self, options), Keyword.get(options, :reason?, false), options)
     end
   end
 

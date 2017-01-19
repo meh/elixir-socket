@@ -145,7 +145,7 @@ defmodule Socket.Web do
 
   `:path` sets the path to give the server, `/` by default
   `:origin` sets the Origin header, this is optional
-  `:key` is the key used for the handshake, this is optional
+  `:handshake` is the key used for the handshake, this is optional
 
   You can also pass TCP or SSL options, depending if you're using secure
   websockets or not.
@@ -209,7 +209,7 @@ defmodule Socket.Web do
 
   `:path` sets the path to give the server, `/` by default
   `:origin` sets the Origin header, this is optional
-  `:key` is the key used for the handshake, this is optional
+  `:handshake` is the key used for the handshake, this is optional
   `:headers` are additional headers that will be sent
 
   You can also pass TCP or SSL options, depending if you're using secure
@@ -229,7 +229,7 @@ defmodule Socket.Web do
     origin     = local[:origin]
     protocols  = local[:protocol]
     extensions = local[:extensions]
-    key        = :base64.encode(local[:key] || "fork the dongles")
+    handshake  = :base64.encode(local[:handshake] || "fork the dongles")
     headers    = Enum.map(local[:headers] || %{}, fn({ k, v }) -> ["#{k}: #{v}", "\r\n"] end)
 
     client = mod.connect!(address, port, global)
@@ -241,7 +241,7 @@ defmodule Socket.Web do
       if(origin, do: ["Origin: #{origin}", "\r\n"], else: []),
       "Upgrade: websocket", "\r\n",
       "Connection: Upgrade", "\r\n",
-      "Sec-WebSocket-Key: #{key}", "\r\n",
+      "Sec-WebSocket-Key: #{handshake}", "\r\n",
       if(protocols, do: ["Sec-WebSocket-Protocol: #{Enum.join protocols, ", "}", "\r\n"], else: []),
       if(extensions, do: ["Sec-WebSocket-Extensions: #{Enum.join extensions, ", "}", "\r\n"], else: []),
       "Sec-WebSocket-Version: 13", "\r\n",
@@ -264,7 +264,7 @@ defmodule Socket.Web do
       raise RuntimeError, message: "unsupported version"
     end
 
-    if !headers["sec-websocket-accept"] or headers["sec-websocket-accept"] != key(key) do
+    if !headers["sec-websocket-accept"] or headers["sec-websocket-accept"] != key(handshake) do
       client |> Socket.close
 
       raise RuntimeError, message: "wrong key response"
@@ -272,7 +272,7 @@ defmodule Socket.Web do
 
     client |> Socket.packet!(:raw)
 
-    %W{socket: client, version: 13, path: path, origin: origin, key: key, mask: true}
+    %W{socket: client, version: 13, path: path, origin: origin, key: handshake, mask: true}
   end
 
   @doc """
@@ -482,14 +482,14 @@ defmodule Socket.Web do
   @spec arguments(Keyword.t) :: { Keyword.t, Keyword.t }
   def arguments(options) do
     options = Enum.group_by(options, fn
-      { :secure, _ }                      -> true
-      { :path, _ }                        -> true
-      { :origin, _ }                      -> true
-      { :protocol, _ }                    -> true
-      { :extensions, _ }                  -> true
-      { :key, key } when key |> is_binary -> true
-      { :headers, _ }                     -> true
-      _                                   -> false
+      { :secure, _ }     -> true
+      { :path, _ }       -> true
+      { :origin, _ }     -> true
+      { :protocol, _ }   -> true
+      { :extensions, _ } -> true
+      { :handshake, _ }  -> true
+      { :headers, _ }    -> true
+      _                  -> false
     end)
 
     { Map.get(options, true, []), Map.get(options, false, []) }

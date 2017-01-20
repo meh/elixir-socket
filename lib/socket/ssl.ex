@@ -17,8 +17,8 @@ defmodule Socket.SSL do
 
   * `:cert` can either be an encoded certificate or `[path:
     "path/to/certificate"]`
-  * `:key` can either be an encoded certificate, `[path: "path/to/key]`, `[rsa:
-    "rsa encoded"]` or `[dsa: "dsa encoded"]`
+  * `:key` can either be an encoded certificate, `[path: "path/to/key"]`, `[rsa:
+    "rsa encoded"]` or `[dsa: "dsa encoded"]` or `[ec: "ec encoded"]`
   * `:authorities` can iehter be an encoded authorities or `[path:
     "path/to/authorities"]`
   * `:dh` can either be an encoded dh or `[path: "path/to/dh"]`
@@ -28,6 +28,8 @@ defmodule Socket.SSL do
   * `:renegotiation` if it's set to `:secure` renegotiation will be secured
   * `:ciphers` is a list of ciphers to allow
   * `:advertised_protocols` is a list of strings representing the advertised
+    protocols for NPN
+  * `:preferred_protocols` is a list of strings representing the preferred next
     protocols for NPN
 
   You can also pass TCP options.
@@ -341,19 +343,24 @@ defmodule Socket.SSL do
   @spec arguments(Keyword.t) :: list
   def arguments(options) do
     options = Enum.group_by(options, fn
+      { :server_name, _ }          -> true
       { :cert, _ }                 -> true
       { :key, _ }                  -> true
       { :authorities, _ }          -> true
+      { :sni, _ }                  -> true
       { :dh, _ }                   -> true
       { :verify, _ }               -> true
       { :password, _ }             -> true
       { :renegotiation, _ }        -> true
       { :ciphers, _ }              -> true
       { :depth, _ }                -> true
+      { :identity, _ }             -> true
       { :versions, _ }             -> true
+      { :alert, _ }                -> true
       { :ibernate, _ }             -> true
       { :reuse, _ }                -> true
       { :advertised_protocols, _ } -> true
+      { :preferred_protocols, _ }  -> true
       _                            -> false
     end)
 
@@ -363,6 +370,12 @@ defmodule Socket.SSL do
     }
 
     Socket.TCP.arguments(global) ++ Enum.flat_map(local, fn
+      { :server_name, false } ->
+        [{ :server_name_indication, :disable }]
+
+      { :server_name, name } ->
+        [{ :server_name_indication, String.to_charlist(name) }]
+
       { :cert, [path: path] } ->
         [{ :certfile, path }]
 
@@ -377,6 +390,9 @@ defmodule Socket.SSL do
 
       { :key, [dsa: key] } ->
         [{ :key, { :DSAPrivateKey, key } }]
+
+      { :key, [ec: key] } ->
+        [{ :key, { :ECPrivateKey, key } }]
 
       { :key, key } ->
         [{ :key, { :PrivateKeyInfo, key } }]
@@ -393,6 +409,17 @@ defmodule Socket.SSL do
       { :dh, dh } ->
         [{ :dh, dh }]
 
+      { :sni, sni } ->
+        Enum.flat_map(sni, fn
+          { :hosts, hosts } ->
+            [{ :sni_hosts, Enum.map(hosts, fn { name, options } ->
+              { String.to_charlist(name), arguments(options) }
+            end) }]
+
+          { :function, fun } ->
+            [{ :sni_fun, fun }]
+        end)
+
       { :verify, false } ->
         [{ :verify, :verify_none }]
 
@@ -402,8 +429,17 @@ defmodule Socket.SSL do
       { :verify, [function: fun, data: data] } ->
         [{ :verify_fun, { fun, data } }]
 
+      { :identity, identity } ->
+        Enum.flat_map(identity, fn
+          { :psk, value } ->
+            [{ :psk_identity, String.to_charlist(value) }]
+
+          { :srp, { first, second } } ->
+            [{ :srp_identity, { String.to_charlist(first), String.to_charlist(second) } }]
+        end)
+
       { :password, password } ->
-        [{ :password, password }]
+        [{ :password, String.to_charlist(password) }]
 
       { :renegotiation, :secure } ->
         [{ :secure_renegotiate, true }]
@@ -417,6 +453,9 @@ defmodule Socket.SSL do
       { :versions, versions } ->
         [{ :versions, versions }]
 
+      { :alert, value } ->
+        [{ :log_alert, value }]
+
       { :hibernate, hibernate } ->
         [{ :hibernate_after, hibernate }]
 
@@ -428,6 +467,9 @@ defmodule Socket.SSL do
 
       { :advertised_protocols, protocols } ->
         [{ :next_protocols_advertised, protocols }]
+
+      { :preferred_protocols, protocols } ->
+        [{ :client_preferred_next_protocols, protocols }]
     end)
   end
 

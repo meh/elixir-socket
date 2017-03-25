@@ -156,8 +156,9 @@ defmodule Socket.TCP do
   """
   @spec listen(:inet.port_number, Keyword.t) :: { :ok, t } | { :error, Socket.Error.t }
   def listen(port, options) when options |> is_list do
-    options = Keyword.put(options, :mode, :passive)
-    options = Keyword.put_new(options, :reuseaddr, true)
+    options = options
+              |> Keyword.put(options, :mode, :passive)
+              |> Keyword.put_new(options, :reuse, true)
 
     :gen_tcp.listen(port, arguments(options))
   end
@@ -259,7 +260,7 @@ defmodule Socket.TCP do
   @spec arguments(Keyword.t) :: list
   def arguments(options) do
     options = options
-      |> Keyword.put_new(:as, :binary)
+              |> Keyword.put_new(:as, :binary)
 
     options = Enum.group_by(options, fn
       { :as, _ }        -> true

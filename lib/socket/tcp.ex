@@ -157,8 +157,8 @@ defmodule Socket.TCP do
   @spec listen(:inet.port_number, Keyword.t) :: { :ok, t } | { :error, Socket.Error.t }
   def listen(port, options) when options |> is_list do
     options = options
-              |> Keyword.put(options, :mode, :passive)
-              |> Keyword.put_new(options, :reuse, true)
+              |> Keyword.put(:mode, :passive)
+              |> Keyword.put_new(:reuse, true)
 
     :gen_tcp.listen(port, arguments(options))
   end

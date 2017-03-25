@@ -198,7 +198,7 @@ defmodule Socket.SSL do
   @spec listen(:inet.port_number, Keyword.t) :: { :ok, t } | { :error, term }
   def listen(port, options) do
     options = Keyword.put(options, :mode, :passive)
-    options = Keyword.put_new(options, :reuseaddr, true)
+    options = Keyword.put_new(options, :reuse, true)
 
     :ssl.listen(port, arguments(options))
   end
@@ -358,7 +358,7 @@ defmodule Socket.SSL do
       { :versions, _ }             -> true
       { :alert, _ }                -> true
       { :ibernate, _ }             -> true
-      { :reuse, _ }                -> true
+      { :session, _ }              -> true
       { :advertised_protocols, _ } -> true
       { :preferred_protocols, _ }  -> true
       _                            -> false
@@ -459,11 +459,17 @@ defmodule Socket.SSL do
       { :hibernate, hibernate } ->
         [{ :hibernate_after, hibernate }]
 
-      { :reuse, fun } when fun |> is_function ->
-        [{ :reuse_session, fun }]
+      { :session, session } ->
+        Enum.flat_map(session, fn
+          { :reuse, true } ->
+            [{ :reuse_sessions, true }]
 
-      { :reuse, true } ->
-        [{ :reuse_sessions, true }]
+          { :reuse, false } ->
+            [{ :reuse_sessions, false }]
+
+          { :reuse, fun } when fun |> is_function ->
+            [{ :reuse_session, fun }]
+        end)
 
       { :advertised_protocols, protocols } ->
         [{ :next_protocols_advertised, protocols }]

@@ -183,10 +183,10 @@ defmodule Socket do
       { :route, false } ->
         [{ :dontroute, true }]
 
-      { :reuseaddr, true } ->
+      { :reuse, true } ->
         [{ :reuseaddr, true }]
 
-      { :reuseaddr, false } ->
+      { :reuse, false } ->
         []
 
       { :linger, value } ->
@@ -211,8 +211,11 @@ defmodule Socket do
 
           { :buffer, buffer } ->
             [{ :sndbuf, buffer }]
+        end)
 
-          { :recv, buffer } ->
+      { :recv, options } ->
+        Enum.flat_map(options, fn
+          { :buffer, buffer } ->
             [{ :recbuf, buffer }]
         end)
     end)

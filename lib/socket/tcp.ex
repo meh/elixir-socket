@@ -306,7 +306,7 @@ defmodule Socket.TCP do
 
       { :local, options } ->
         Enum.flat_map(options, fn
-          { :ip, address } ->
+          { :address, address } ->
             [{ :ip, Socket.Address.parse(address) }]
 
           { :port, port } ->

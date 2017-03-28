@@ -12,25 +12,14 @@ defmodule Socket.SOCKS do
   def connect(to, through, options \\ []) do
     [address, port | auth] = through |> Tuple.to_list
 
-    case pre(address, port, options) do
-      { :ok, socket } ->
-        case handshake(socket, options[:version] || 5, auth |> List.to_tuple, to) do
-          :ok ->
-            case post(socket, options) do
-              :ok ->
-                { :ok, socket }
-
-              { :error, _ } = error ->
-                error
-            end
-
-          { :error, _ } = error ->
-            error
-        end
-
-      { :error, _ } = error ->
-        error
-    end
+    with { :ok, socket } <- pre(address, port, options),
+         :ok             <- handshake(socket, options[:version] || 5, auth |> List.to_tuple, to),
+         :ok             <- post(socket, options)
+      do
+        { :ok, socket }
+      else
+        err -> err
+      end
   end
 
   defbang connect(to, through)
@@ -40,7 +29,6 @@ defmodule Socket.SOCKS do
     options = if options[:mode] == :active || options[:mode] == :once do
       options
         |> Keyword.put(:mode, :passive)
-        |> Keyword.put(:automatic, false)
     else
       options
     end

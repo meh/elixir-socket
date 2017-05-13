@@ -92,16 +92,16 @@ defmodule Socket.UDP do
   Set the process which will receive the messages.
   """
   @spec process(t | port, pid) :: :ok | { :error, :closed | :not_owner | Error.t }
-  def process(sock, pid) when sock |> is_port do
-    :gen_udp.controlling_process(sock, pid)
+  def process(socket, pid) when socket |> is_port do
+    :gen_udp.controlling_process(socket, pid)
   end
 
   @doc """
   Set the process which will receive the messages, raising if an error occurs.
   """
   @spec process!(t | port, pid) :: :ok | no_return
-  def process!(sock, pid) do
-    case process(sock, pid) do
+  def process!(socket, pid) do
+    case process(socket, pid) do
       :ok ->
         :ok
 
@@ -120,8 +120,8 @@ defmodule Socket.UDP do
   Set options of the socket.
   """
   @spec options(t, Keyword.t) :: :ok | { :error, Error.t }
-  def options(sock, opts) when sock |> is_port do
-    :inet.setopts(sock, arguments(opts))
+  def options(socket, opts) when socket |> is_port do
+    :inet.setopts(socket, arguments(opts))
   end
 
   @doc """

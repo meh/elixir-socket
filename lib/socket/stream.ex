@@ -101,8 +101,8 @@ defmodule Socket.Stream do
         :eof ->
           :ok
 
-        { :error, _ } = error ->
-          error
+        { :error, reason } ->
+          { :error, reason }
 
         _ ->
           io(0, self, io, options[:size] || -1, options[:chunk_size] || 4096)
@@ -117,8 +117,8 @@ defmodule Socket.Stream do
       :eof ->
         :ok
 
-      { :error, _ } = error ->
-        error
+      { :error, reason } ->
+        { :error, reason }
 
       data ->
         self |> send(data)
@@ -130,8 +130,8 @@ defmodule Socket.Stream do
       :eof ->
         :ok
 
-      { :error, _ } = error ->
-        error
+      { :error, reason } ->
+        { :error, reason }
 
       data ->
         self |> send(data)
@@ -184,8 +184,8 @@ defimpl Socket.Stream.Protocol, for: Port do
       { :error, :closed } ->
         { :ok, nil }
 
-      { :error, _ } = error ->
-        error
+      { :error, reason } ->
+        { :error, reason }
     end
   end
 
@@ -231,11 +231,11 @@ defimpl Socket.Stream.Protocol, for: Tuple do
       { :ok, :ok } ->
         :ok
 
-      { :ok, { :error, _ } = error } ->
-        error
+      { :ok, { :error, reason } } ->
+        { :error, reason }
 
-      { :error, _ } = error ->
-        error
+      { :error, reason } ->
+        { :error, reason }
     end
   end
 
@@ -261,8 +261,8 @@ defimpl Socket.Stream.Protocol, for: Tuple do
       { :error, :closed } ->
         { :ok, nil }
 
-      { :error, _ } = error ->
-        error
+      { :error, reason } ->
+        { :error, reason }
     end
   end
 

@@ -231,31 +231,17 @@ defmodule Socket.SSL do
   start an SSL connection on the given client socket with the given options.
   """
   @spec accept(Socket.t, Keyword.t) :: { :ok, t } | { :error, term }
-  def accept(sock, options) when sock |> Record.is_record(:sslsocket) do
+  def accept(socket, options) when socket |> Record.is_record(:sslsocket) do
     timeout = options[:timeout] || :infinity
 
-    case :ssl.transport_accept(sock, timeout) do
-      { :ok, sock } ->
-        result = if options[:mode] == :active do
-          :ssl.setopts(sock, [{ :active, true }])
-        else
-          :ok
-        end
-
-        if result == :ok do
-          result = sock |> handshake(timeout: timeout)
-
-          if result == :ok do
-            { :ok, sock }
-          else
-            result
-          end
-        else
-          result
-        end
-
-      error ->
-        error
+    with { :ok, socket } <- socket |> :ssl.transport_accept(timeout),
+         :ok             <- if(options[:mode] == :active, do: socket |> :ssl.setopts([{ :active, true }]), else: :ok),
+         :ok             <- socket |> handshake(timeout: timeout)
+    do
+      { :ok, socket }
+    else
+      { :error, reason } ->
+        { :error, reason }
     end
   end
 
@@ -280,10 +266,10 @@ defmodule Socket.SSL do
   """
   @spec handshake(t)            :: :ok | { :error, term }
   @spec handshake(t, Keyword.t) :: :ok | { :error, term }
-  def handshake(sock, options \\ []) when sock |> Record.is_record(:sslsocket) do
+  def handshake(socket, options \\ []) when socket |> Record.is_record(:sslsocket) do
     timeout = options[:timeout] || :infinity
 
-    :ssl.ssl_accept(sock, timeout)
+    :ssl.ssl_accept(socket, timeout)
   end
 
   @doc """
@@ -292,23 +278,23 @@ defmodule Socket.SSL do
   """
   @spec handshake!(t)            :: :ok | no_return
   @spec handshake!(t, Keyword.t) :: :ok | no_return
-  defbang handshake(sock)
-  defbang handshake(sock, options)
+  defbang handshake(socket)
+  defbang handshake(socket, options)
 
   @doc """
   Set the process which will receive the messages.
   """
   @spec process(t | port, pid) :: :ok | { :error, :closed | :not_owner | Error.t }
-  def process(sock, pid) when sock |> Record.is_record(:sslsocket) do
-    :ssl.controlling_process(sock, pid)
+  def process(socket, pid) when socket |> Record.is_record(:sslsocket) do
+    :ssl.controlling_process(socket, pid)
   end
 
   @doc """
   Set the process which will receive the messages, raising if an error occurs.
   """
   @spec process!(t | port, pid) :: :ok | no_return
-  def process!(sock, pid) do
-    case process(sock, pid) do
+  def process!(socket, pid) do
+    case process(socket, pid) do
       :ok ->
         :ok
 
@@ -483,36 +469,36 @@ defmodule Socket.SSL do
   Get information about the SSL connection.
   """
   @spec info(t) :: { :ok, list } | { :error, term }
-  def info(sock) when sock |> Record.is_record(:sslsocket) do
-    :ssl.connection_information(sock)
+  def info(socket) when socket |> Record.is_record(:sslsocket) do
+    :ssl.connection_information(socket)
   end
 
   @doc """
   Get information about the SSL connection, raising if an error occurs.
   """
   @spec info!(t) :: list | no_return
-  defbang info(sock)
+  defbang info(socket)
 
   @doc """
   Get the certificate of the peer.
   """
   @spec certificate(t) :: { :ok, String.t } | { :error, term }
-  def certificate(sock) when sock |> Record.is_record(:sslsocket) do
-    :ssl.peercert(sock)
+  def certificate(socket) when socket |> Record.is_record(:sslsocket) do
+    :ssl.peercert(socket)
   end
 
   @doc """
   Get the certificate of the peer, raising if an error occurs.
   """
   @spec certificate!(t) :: String.t | no_return
-  defbang certificate(sock)
+  defbang certificate(socket)
 
   @doc """
   Get the negotiated protocol.
   """
   @spec negotiated_protocol(t) :: String.t | nil
-  def negotiated_protocol(sock) when sock |> Record.is_record(:sslsocket) do
-    case :ssl.negotiated_protocol(sock) do
+  def negotiated_protocol(socket) when socket |> Record.is_record(:sslsocket) do
+    case :ssl.negotiated_protocol(socket) do
       { :ok, protocol } ->
         protocol
 
@@ -525,13 +511,13 @@ defmodule Socket.SSL do
   Renegotiate the secure connection.
   """
   @spec renegotiate(t) :: :ok | { :error, term }
-  def renegotiate(sock) when sock |> Record.is_record(:sslsocket) do
-    :ssl.renegotiate(sock)
+  def renegotiate(socket) when socket |> Record.is_record(:sslsocket) do
+    :ssl.renegotiate(socket)
   end
 
   @doc """
   Renegotiate the secure connection, raising if an error occurs.
   """
   @spec renegotiate!(t) :: :ok | no_return
-  defbang renegotiate(sock)
+  defbang renegotiate(socket)
 end

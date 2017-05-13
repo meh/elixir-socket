@@ -15,11 +15,12 @@ defmodule Socket.SOCKS do
     with { :ok, socket } <- pre(address, port, options),
          :ok             <- handshake(socket, options[:version] || 5, auth |> List.to_tuple, to),
          :ok             <- post(socket, options)
-      do
-        { :ok, socket }
-      else
-        err -> err
-      end
+    do
+      { :ok, socket }
+    else
+      { :error, reason } ->
+        { :error, reason }
+    end
   end
 
   defbang connect(to, through)
@@ -63,13 +64,14 @@ defmodule Socket.SOCKS do
 
           # user name followed by NULL
           user :: binary,
-          0x00 :: 8 >>) do
-            :ok ->
-              response(socket, 4)
+          0x00 :: 8 >>)
+        do
+          :ok ->
+            response(socket, 4)
 
-            { :error, _ } = error ->
-              error
-          end
+          { :error, reason } ->
+            { :error, reason }
+        end
 
       nil ->
         case socket |> Socket.Stream.send(<<
@@ -94,13 +96,14 @@ defmodule Socket.SOCKS do
 
           # host followed by NULL
           address :: binary,
-          0x00    :: 8 >>) do
-            :ok ->
-              response(socket, 4)
+          0x00    :: 8 >>)
+        do
+          :ok ->
+            response(socket, 4)
 
-            { :error, _ } = error ->
-              error
-          end
+          { :error, reason } ->
+            { :error, reason}
+        end
     end
   end
 
@@ -128,8 +131,8 @@ defmodule Socket.SOCKS do
       { :ok, << 0x00 :: 8, 0x5d :: 8, _ :: 16, _ :: 32 >> } ->
         { :error, :unauthorized }
 
-      { :error, _ } = error ->
-        error
+      { :error, reason } ->
+        { :error, reason }
     end
   end
 

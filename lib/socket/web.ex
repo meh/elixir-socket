@@ -323,8 +323,8 @@ defmodule Socket.Web do
       { :ok, socket } ->
         { :ok, %W{socket: socket} }
 
-      error ->
-        error
+      { :error, reason } ->
+        { :error, reason }
     end
   end
 
@@ -582,8 +582,8 @@ defmodule Socket.Web do
           { :ok, << length :: 64 >> } ->
             length
 
-          { :error, _ } = error ->
-            error
+          { :error, reason } ->
+            { :error, reason }
         end
 
       length == 126 ->
@@ -591,8 +591,8 @@ defmodule Socket.Web do
           { :ok, << length :: 16 >> } ->
             length
 
-          { :error, _ } = error ->
-            error
+          { :error, reason } ->
+            { :error, reason }
         end
 
       length <= 125 ->
@@ -600,8 +600,8 @@ defmodule Socket.Web do
     end
 
     case length do
-      { :error, _ } = error ->
-        error
+      { :error, reason } ->
+        { :error, reason }
 
       length ->
         if mask do
@@ -612,15 +612,15 @@ defmodule Socket.Web do
                   { :ok, data } ->
                     { :ok, unmask(key, data) }
 
-                  { :error, _ } = error ->
-                    error
+                  { :error, reason } ->
+                    { :error, reason }
                 end
               else
                 { :ok, "" }
               end
 
-            { :error, _ } = error ->
-              error
+            { :error, reason } ->
+              { :error, reason }
           end
         else
           if length > 0 do
@@ -628,8 +628,8 @@ defmodule Socket.Web do
               { :ok, data } ->
                 { :ok, data }
 
-              { :error, _ } = error ->
-                error
+              { :error, reason } ->
+                { :error, reason }
             end
           else
             { :ok, "" }
@@ -644,8 +644,8 @@ defmodule Socket.Web do
         { :ok, var!(data) } ->
           { :ok, unquote(result) }
 
-        { :error, _ } = error ->
-          error
+        { :error, reason } ->
+          { :error, reason }
       end
     end
   end
@@ -726,8 +726,8 @@ defmodule Socket.Web do
       { :ok, _ } ->
         { :error, :protocol_error }
 
-      { :error, _ } = error ->
-        error
+      { :error, reason } ->
+        { :error, reason }
     end
   end
 
@@ -850,8 +850,8 @@ defmodule Socket.Web do
       :ok ->
         cookie
 
-      { :error, _ } = error ->
-        error
+      { :error, reason } ->
+        { :error, reason }
     end
   end
 
@@ -950,5 +950,4 @@ defmodule Socket.Web do
   def abort(%W{socket: socket}) do
     Socket.Stream.close(socket)
   end
-
 end

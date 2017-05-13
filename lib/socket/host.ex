@@ -34,8 +34,8 @@ defmodule Socket.Host do
       { :ok, host } ->
         { :ok, convert(host) }
 
-      error ->
-        error
+      { :error, reason } ->
+        { :error, reason }
     end
   end
 
@@ -62,8 +62,8 @@ defmodule Socket.Host do
       { :ok, host } ->
         { :ok, convert(host) }
 
-      error ->
-        error
+      { :error, reason } ->
+        { :error, reason }
     end
   end
 
@@ -76,8 +76,8 @@ defmodule Socket.Host do
       { :ok, host } ->
         { :ok, convert(host) }
 
-      error ->
-        error
+      { :error, reason } ->
+        { :error, reason }
     end
   end
 

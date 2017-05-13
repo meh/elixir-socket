@@ -175,27 +175,30 @@ defmodule Socket.TCP do
   """
   @spec accept(t | port)            :: { :ok, t } | { :error, Error.t }
   @spec accept(t | port, Keyword.t) :: { :ok, t } | { :error, Error.t }
-  def accept(sock, options \\ []) do
-    case :gen_tcp.accept(sock, options[:timeout] || :infinity) do
-      { :ok, sock } ->
+  def accept(socket, options \\ []) do
+    timeout = options[:timeout] || :infinity
+
+    case :gen_tcp.accept(socket, timeout) do
+      { :ok, socket } ->
+        # XXX: the error code here is not checked
         case options[:mode] do
           :active ->
-            :inet.setopts(sock, active: true)
+            :inet.setopts(socket, active: true)
 
           :once ->
-            :inet.setopts(sock, active: :once)
+            :inet.setopts(socket, active: :once)
 
           :passive ->
-            :inet.setopts(sock, active: false)
+            :inet.setopts(socket, active: false)
 
           nil ->
             :ok
         end
 
-        { :ok, sock }
+        { :ok, socket }
 
-      error ->
-        error
+      { :error, reason } ->
+        { :error, reason }
     end
   end
 
@@ -212,16 +215,16 @@ defmodule Socket.TCP do
   Set the process which will receive the messages.
   """
   @spec process(t, pid) :: :ok | { :error, :closed | :not_owner | Error.t }
-  def process(sock, pid) do
-    :gen_tcp.controlling_process(sock, pid)
+  def process(socket, pid) do
+    :gen_tcp.controlling_process(socket, pid)
   end
 
   @doc """
   Set the process which will receive the messages, raising if an error occurs.
   """
   @spec process!(t | port, pid) :: :ok | no_return
-  def process!(sock, pid) do
-    case process(sock, pid) do
+  def process!(socket, pid) do
+    case process(socket, pid) do
       :ok ->
         :ok
 

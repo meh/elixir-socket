@@ -81,8 +81,8 @@ defimpl Socket.Datagram.Protocol, for: Port do
       { :error, :closed } ->
         { :ok, nil }
 
-      { :error, _ } = error ->
-        error
+      { :error, reason } ->
+        { :error, reason }
     end
   end
 end

@@ -163,6 +163,9 @@ defmodule Socket.Web do
 
       e in [RuntimeError] ->
         { :error, e.message }
+        
+      e in [Socket.Error] ->
+        { :error, e.message }
 
       e in [Socket.Error] ->
         { :error, e.message }

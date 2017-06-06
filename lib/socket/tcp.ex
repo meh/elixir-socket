@@ -272,7 +272,7 @@ defmodule Socket.TCP do
       { :backlog, _ }   -> true
       { :watermark, _ } -> true
       { :local, _ }     -> true
-      { :verion, _ }    -> true
+      { :version, _ }   -> true
       { :options, _ }   -> true
       _                 -> false
     end)

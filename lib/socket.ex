@@ -111,9 +111,9 @@ defmodule Socket do
   ## Example
 
       { :ok, server } = Socket.listen "tcp://*:1337"
-      client = server.accept!(packet: :line)
-      client.send(client.recv)
-      client.close
+      client = server |> Socket.accept!(packet: :line)
+      client |> Socket.Stream.send(client.recv)
+      client |> Socket.Stream.close
 
   """
   @spec listen(String.t | URI.t) :: { :ok, Socket.t } | { :error, any }

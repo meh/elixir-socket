@@ -474,6 +474,7 @@ defmodule Socket.Web do
       if(extensions, do: ["Sec-WebSocket-Extensions: ", Enum.join(extensions, ", "), "\r\n"], else: []),
       if(protocol, do: ["Sec-WebSocket-Protocol: ", protocol, "\r\n"], else: []),
       "\r\n" ])
+    socket
   end
 
   @doc """

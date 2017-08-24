@@ -138,7 +138,7 @@ defmodule Socket.SSL do
   @spec connect(Socket.Address.t, :inet.port_number, Keyword.t) :: { :ok, t } | { :error, term }
   def connect(address, port, options) do
     address = if address |> is_binary do
-      String.to_char_list(address)
+      String.to_charlist(address)
     else
       address
     end

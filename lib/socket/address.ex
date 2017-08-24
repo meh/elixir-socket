@@ -9,14 +9,14 @@
 defmodule Socket.Address do
   require Bitwise
 
-  @type t :: String.t | char_list | :inet.ip_address
+  @type t :: String.t | charlist | :inet.ip_address
 
   @doc """
   Parse a string to an ip address tuple.
   """
   @spec parse(t) :: :inet.ip_address
   def parse(text) when text |> is_binary do
-    parse(String.to_char_list(text))
+    parse(String.to_charlist(text))
   end
 
   def parse(text) when text |> is_list do

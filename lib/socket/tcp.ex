@@ -105,7 +105,7 @@ defmodule Socket.TCP do
     timeout = options[:timeout] || :infinity
     options = Keyword.delete(options, :timeout)
 
-    :gen_tcp.connect(String.to_char_list(address), port, arguments(options), timeout)
+    :gen_tcp.connect(String.to_charlist(address), port, arguments(options), timeout)
   end
 
   @doc """

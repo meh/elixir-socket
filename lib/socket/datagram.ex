@@ -51,7 +51,7 @@ end
 defimpl Socket.Datagram.Protocol, for: Port do
   def send(self, data, { address, port }) do
     address = if address |> is_binary do
-      address |> String.to_char_list
+      address |> String.to_charlist
     else
       address
     end

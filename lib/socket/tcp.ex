@@ -74,7 +74,7 @@ defmodule Socket.TCP do
   Create a TCP socket connecting to the given host and port tuple, raising if
   an error occurs.
   """
-  @spec connect({ Socket.Address.t, :inet.port_number }) :: t | no_return
+  @spec connect!({ Socket.Address.t, :inet.port_number }) :: t | no_return
   defbang connect(descriptor)
 
   @doc """
@@ -94,7 +94,7 @@ defmodule Socket.TCP do
   Create a TCP socket connecting to the given host and port tuple and options,
   or to the given host and port, raising if an error occurs.
   """
-  @spec connect({ Socket.Address.t, :inet.port_number } | Socket.Address.t, Keyword.t | :inet.port_number) :: t | no_return
+  @spec connect!({ Socket.Address.t, :inet.port_number } | Socket.Address.t, Keyword.t | :inet.port_number) :: t | no_return
   defbang connect(address, port)
 
   @doc """

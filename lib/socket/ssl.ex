@@ -387,7 +387,7 @@ defmodule Socket.SSL do
         [{ :cacertfile, path }]
 
       { :authorities, ca } ->
-        [{ :cacert, ca }]
+        [{ :cacerts, ca }]
 
       { :dh, [path: path] } ->
         [{ :dhfile, path }]

@@ -385,7 +385,7 @@ defmodule Socket.Web do
   connect based on Origin header, path and other things.
   """
   @spec accept(t, Keyword.t) :: { :ok, t } | { :error, error }
-  def accept(%W{key: nil} = self, options \\ []) do
+  def accept(self, options \\ []) do
     try do
       { :ok, accept!(self, options) }
     rescue

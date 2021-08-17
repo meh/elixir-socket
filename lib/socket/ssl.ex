@@ -236,7 +236,7 @@ defmodule Socket.SSL do
 
     with { :ok, socket } <- socket |> :ssl.transport_accept(timeout),
          :ok             <- if(options[:mode] == :active, do: socket |> :ssl.setopts([{ :active, true }]), else: :ok),
-         :ok             <- socket |> handshake(timeout: timeout)
+         {:ok, _socket}             <- socket |> handshake(timeout: timeout)
     do
       { :ok, socket }
     else
@@ -249,7 +249,7 @@ defmodule Socket.SSL do
     timeout = options[:timeout] || :infinity
     options = Keyword.delete(options, :timeout)
 
-    :ssl.ssl_accept(wrap, arguments(options), timeout)
+    :ssl.handshake(wrap, arguments(options), timeout)
   end
 
   @doc """
@@ -269,7 +269,7 @@ defmodule Socket.SSL do
   def handshake(socket, options \\ []) when socket |> Record.is_record(:sslsocket) do
     timeout = options[:timeout] || :infinity
 
-    :ssl.ssl_accept(socket, timeout)
+    :ssl.handshake(socket, timeout)
   end
 
   @doc """

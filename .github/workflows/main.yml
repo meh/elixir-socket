@@ -1,0 +1,31 @@
+name: CI
+
+on: push
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    name: OTP ${{ matrix.otp }} / Elixir ${{ matrix.elixir }}
+    strategy:
+      matrix:
+        otp: ["22.3", "23.3", "24.0"]
+        elixir: ["1.10.4", "1.11.3", "1.12.3"]
+    env:
+      MIX_ENV: test
+      cache_version: v2
+    steps:
+      - uses: actions/checkout@v2
+        name: Checkout
+
+      - uses: erlef/setup-elixir@v1
+        name: Setup elixir
+        with:
+          otp-version: ${{matrix.otp}}
+          elixir-version: ${{matrix.elixir}}
+
+      - run: mix deps.get
+      - run: mix compile
+      - run: mix test

@@ -171,6 +171,9 @@ defmodule Socket do
       { :mode, :active } ->
         [{ :active, true }]
 
+      { :active, n } when is_integer(n) ->
+        [{ :active, n }]
+
       { :mode, :once } ->
         [{ :active, :once }]
 

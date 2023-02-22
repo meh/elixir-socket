@@ -410,10 +410,10 @@ defmodule Socket.SSL do
         [{ :verify, :verify_none }]
 
       { :verify, [function: fun] } ->
-        [{ :verify_fun, { fun, nil } }]
+        [{ :verify, :verify_peer }, { :verify_fun, { fun, nil } }]
 
       { :verify, [function: fun, data: data] } ->
-        [{ :verify_fun, { fun, data } }]
+        [{ :verify, :verify_peer }, { :verify_fun, { fun, data } }]
 
       { :identity, identity } ->
         Enum.flat_map(identity, fn
